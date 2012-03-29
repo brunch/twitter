@@ -2359,7 +2359,7 @@ function program1(depth0,data) {
 function program3(depth0,data) {
   
   
-  return "\n  Tweet your brunch is an example app\n  built with <a href=\"http://brunch.io/\">Brunch</a>,\n  <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>,\n  <a href=\"http://backbonejs.org/\">Backbone.js</a>,\n  <a href=\"http://coffeescript.org/\">CoffeeScript</a>,\n  <a href=\"http://jade-lang.com/\">Jade</a> and\n  <a href=\"https://github.com/LearnBoost/stylus\">Stylus</a>.\n";}
+  return "\n  Tweet your brunch is an example app\n  built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>\n";}
 
   foundHelper = helpers._identity;
   stack1 = foundHelper || depth0._identity;
