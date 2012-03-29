@@ -1,21 +1,15 @@
-{{#with_user}}
-  {{#if id}}
-    <div class="navbar-inner">
-      <div class="container">
-        <div class="nav-collapse">
-          <ul class="nav">
-            <li class="active">
-              <a href="#home">Home</a>
+{{#if_logged_in}}
+  <div class="navbar-inner">
+    <div class="container">
+      <div class="nav-collapse">
+        <ul class="nav">
+          {{#each items}}
+            <li>
+              <a href="#{{this.href}}">{{this.title}}</a>
             </li>
-            <li class="">
-              <a href="#connect">Mentions</a>
-            </li>
-            <li class="">
-              <a href="">Logout</a>
-            </li>
-          </ul>
-        </div>
+          {{/each}}
+        </ul>
       </div>
     </div>
-  {{/if}}
-{{/with_user}}
+  </div>
+{{/if_logged_in}}
