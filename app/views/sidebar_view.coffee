@@ -16,7 +16,8 @@ module.exports = class SidebarView extends View
     super
     @subscribeEvent 'loginStatus', @loginStatusHandler
     @subscribeEvent 'userData', @render
-    @delegate 'keyup', '.composable-tweet-text', @updateCharacterCount
+    _(['keyup', 'keydown']).each (eventName) =>
+      @delegate eventName, '.composable-tweet-text', @updateCharacterCount
     @delegate 'click', '.composable-tweet-send-button', @createTweet
 
   loginStatusHandler: (loggedIn) =>

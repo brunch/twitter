@@ -2264,10 +2264,13 @@
     SidebarView.prototype.autoRender = true;
 
     SidebarView.prototype.initialize = function() {
+      var _this = this;
       SidebarView.__super__.initialize.apply(this, arguments);
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
       this.subscribeEvent('userData', this.render);
-      this.delegate('keyup', '.composable-tweet-text', this.updateCharacterCount);
+      _(['keyup', 'keydown']).each(function(eventName) {
+        return _this.delegate(eventName, '.composable-tweet-text', _this.updateCharacterCount);
+      });
       return this.delegate('click', '.composable-tweet-send-button', this.createTweet);
     };
 
@@ -2384,22 +2387,7 @@ function program2(depth0,data) {
 function program1(depth0,data) {
   
   var buffer = "", stack1;
-  buffer += "\n  ";
-  foundHelper = helpers.with_user;
-  stack1 = foundHelper || depth0.with_user;
-  tmp1 = self.program(2, program2, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n  <div class=\"composable-tweet\">\n    <textarea class=\"composable-tweet-text\" placeholder=\"What's happening?\"></textarea>\n    <div class=\"composable-tweet-info\">\n      <span class=\"composable-tweet-character-count\">140</span>\n      <button class=\"composable-tweet-send-button btn btn-primary\" disabled>Tweet</button>\n    </div>\n  </div>\n";
-  return buffer;}
-function program2(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n    <div class=\"account-summary-container\">\n      <div class=\"account-summary\">\n  	    <img class=\"account-summary-avatar avatar size32\" src=\"";
+  buffer += "\n  <div class=\"account-summary-container\">\n    <div class=\"account-summary\">\n	    <img class=\"account-summary-avatar avatar size32\" src=\"";
   foundHelper = helpers.profile_image_url;
   stack1 = foundHelper || depth0.profile_image_url;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
@@ -2409,40 +2397,40 @@ function program2(depth0,data) {
   stack1 = foundHelper || depth0.name;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n  	    <div class=\"account-summary-content\">\n    	    <strong class=\"account-summary-full-name\">";
+  buffer += escapeExpression(stack1) + "\">\n	    <div class=\"account-summary-content\">\n  	    <strong class=\"account-summary-full-name\">";
   foundHelper = helpers.name;
   stack1 = foundHelper || depth0.name;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong>\n    	    <small class=\"account-summary-metadata\">View my profile page</small>\n  	    </div>\n      </div>\n    </div>\n    <ul class=\"stats\">\n      <li class=\"stat-tweets\"><strong>";
+  buffer += escapeExpression(stack1) + "</strong>\n  	    <small class=\"account-summary-metadata\">View my profile page</small>\n	    </div>\n    </div>\n  </div>\n  <ul class=\"stats\">\n    <li class=\"stat-tweets\"><strong>";
   foundHelper = helpers.statuses_count;
   stack1 = foundHelper || depth0.statuses_count;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "statuses_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> tweets</li>\n      <li class=\"stat-following\"><strong>";
+  buffer += escapeExpression(stack1) + "</strong> tweets</li>\n    <li class=\"stat-following\"><strong>";
   foundHelper = helpers.friends_count;
   stack1 = foundHelper || depth0.friends_count;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "friends_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> following</li>\n      <li class=\"stat-followers\"><strong>";
+  buffer += escapeExpression(stack1) + "</strong> following</li>\n    <li class=\"stat-followers\"><strong>";
   foundHelper = helpers.followers_count;
   stack1 = foundHelper || depth0.followers_count;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> followers</li>\n    </ul>\n  ";
+  buffer += escapeExpression(stack1) + "</strong> followers</li>\n  </ul>\n  <div class=\"composable-tweet\">\n    <textarea class=\"composable-tweet-text\" placeholder=\"What's happening?\"></textarea>\n    <div class=\"composable-tweet-info\">\n      <span class=\"composable-tweet-character-count\">140</span>\n      <button class=\"composable-tweet-send-button btn btn-primary\" disabled>Tweet</button>\n    </div>\n  </div>\n";
   return buffer;}
 
-function program4(depth0,data) {
+function program3(depth0,data) {
   
   
-  return "\n  Tweet your brunch is an example app\n  built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>\n";}
+  return "\n  Tweet your brunch is a simple twitter client built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>.\n";}
 
   foundHelper = helpers.if_logged_in;
   stack1 = foundHelper || depth0.if_logged_in;
   tmp1 = self.program(1, program1, data);
   tmp1.hash = {};
   tmp1.fn = tmp1;
-  tmp1.inverse = self.program(4, program4, data);
+  tmp1.inverse = self.program(3, program3, data);
   if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
   else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
@@ -2457,7 +2445,7 @@ function program4(depth0,data) {
   var buffer = "", stack1, foundHelper, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
 
 
-  buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"#@";
+  buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"http://twitter.com/";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
   stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screenName);
@@ -2497,7 +2485,7 @@ function program4(depth0,data) {
   var foundHelper, self=this;
 
 
-  return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n  <div class=\"tweets\"></div>\n</header>\n<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" />\n</div>\n  \n";});
+  return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n</header>\n<div class=\"tweets\"></div>\n\n<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" />\n</div>\n";});
   }
 }));
 (this.require.define({
@@ -2772,7 +2760,6 @@ function');
 
     View.prototype.render = function() {
       var html, template;
-      console.debug("View#render\n\t", this, "\n\tel:", this.el, "\n\tmodel/collection:", this.model || this.collection, "\n\tdisposed:", this.disposed);
       if (this.disposed) return;
       template = this.constructor.template;
       if (typeof template === 'string') {
