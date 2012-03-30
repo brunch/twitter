@@ -17,6 +17,7 @@ module.exports = class SidebarView extends View
     @subscribeEvent 'loginStatus', @loginStatusHandler
     @subscribeEvent 'userData', @render
     @delegate 'keyup', '.composable-tweet-text', @updateCharacterCount
+    @delegate 'click', '.composable-tweet-send-button', @createTweet
 
   loginStatusHandler: (loggedIn) =>
     if loggedIn
@@ -32,12 +33,16 @@ module.exports = class SidebarView extends View
     count = $(event.currentTarget).val().length
     charsLeft = max - count
     $charCount.text charsLeft
-    if charsLeft < 0
-      $charCount.addClass 'composable-tweet-character-count-invalid'
+    if charsLeft < 0 or charsLeft is max
+      unless charsLeft is max
+        $charCount.addClass 'composable-tweet-character-count-invalid'
       $send.attr 'disabled', 'disabled'
     else
       $charCount.removeClass 'composable-tweet-character-count-invalid'
       $send.removeAttr 'disabled'
 
-  invalidCharacterCount: (event) =>
-    @$
+  createTweet: (event) =>
+    api = mediator.user.get('provider').api
+    text = @$('.composable-tweet-text').val()
+    api.updateStatus text, (tweet) =>
+      console.log 'New tweet:', tweet

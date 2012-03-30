@@ -3991,24 +3991,46 @@ a.thumbnail:hover {
 *{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}
 body{padding-top:40px;background-color:#352726}
 .module{margin-bottom:10px;line-height:16px;border:1px solid rgba(0,0,0,0.10);-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;border-top-left-radius:13;background-color:#fff;background-clip:padding-box}
+.avatar{position:absolute;top:12px;left:12px;width:48px;height:48px;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px}
+.size32{width:32px;height:32px}
+.username{color:#999}
 .navbar-fixed-top .container,.navbar-fixed-bottom .container,.container{width:885px}
 .outer-container{padding:15px;background:rgba(255,255,255,0.20)}
 .main-content{margin-left:15px;padding:5px 0}
-.nav > li > a{font-weight:bolder;font-weight:padding-box}
-.login-note{padding:10px}
-.sign-in-button{margin-top:10px;cursor:pointer}
+.nav-item-icon{position:absolute;display:inline-block;width:21px;height:22px;background-image:url("../images/twitter_web_sprite_icons.png");background-position:0 0;background-repeat:no-repeat;}
+.nav-item-icon-container{top:8px}
+.nav-item-link .nav-item-icon{background-position:0 -50px}
+.nav-item-link.active .nav-item-icon{background-position:0 -110px}
+.nav-item-link[href*='mentions'] .nav-item-icon{background-position:-80px -50px}
+.nav-item-link[href*='mentions'].active .nav-item-icon{background-position:-80px -110px}
+.nav-item-link[href*='logout'] .nav-item-icon{background-position:-120px -50px}
+.nav-item-link[href*='logout'].active .nav-item-icon{background-position:-120px -110px}
+.nav-item-link{font-weight:bolder;font-weight:padding-box}
+.nav-item-title{margin-left:26px;font-size:12px}
 h1{padding-bottom:5px}
-.sidebar{padding:12px;}
 .sidebar textarea{width:100%;height:100px}
-.composable-tweet-info{float:right}
+.account-summary{position:relative;padding-bottom:0;}
+.account-summary-container{padding:12px}
+.account-summary-avatar{top:0;left:0}
+.account-summary-content{margin-left:42px}
+.account-summary-full-name{display:block;font-size:14px}
+.account-summary-metadata{font-size:11px;color:#999}
+.stats{margin:0;padding:0 12px;overflow:hidden;list-style:none;border:solid #e8e8e8;border-width:1px 0 1px 0;}
+.stats > li{float:left;padding:7px 12px;font-size:10px;line-height:16px;text-transform:uppercase;color:#999;border:solid #e8e8e8;border-width:0 1px 0 0;}
+.stats > li:first-child{padding-left:0}
+.stats > li:last-child{border-right:0}
+.stats > li strong{display:block;font-size:14px;color:#333}
+.composable-tweet{padding:12px;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;background:#f8f8f8;}
+.composable-tweet-info{text-align:right}
+.composable-tweet-text{padding:10px}
 .composable-tweet-character-count{color:#999;}
 .composable-tweet-character-count-invalid{color:#b83535}
-.tweets-header{padding-left:12px;border-bottom:1px solid #e8e8e8}
+.login-note{padding:10px}
+.sign-in-button{margin-top:10px;cursor:pointer}
+.tweets-header{padding:0 0 6px 12px;border-bottom:1px solid #e8e8e8}
 .tweet{position:relative;min-height:75px;padding:9px 12px 9px;border-bottom:1px solid #e8e8e8;}
 .tweet-content{margin-left:58px}
 .tweet-author-full-name{color:#333}
 .tweet-author-username{color:#999}
 .tweet-text{-webkit-margin-after:0;word-wrap:break-word}
 .tweet-footer{overflow:hidden}
-.avatar{position:absolute;top:12px;left:12px;width:48px;height:48px;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px}
-.username{color:#999}

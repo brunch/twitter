@@ -206,7 +206,7 @@ function'
   # Main render function
   # Always bind it to the view instance
   render: =>
-    #console.debug "View#render\n\t", this, "\n\tel:", @el, "\n\tmodel/collection:", (@model or @collection), "\n\tdisposed:", @disposed
+    console.debug "View#render\n\t", this, "\n\tel:", @el, "\n\tmodel/collection:", (@model or @collection), "\n\tdisposed:", @disposed
 
     return if @disposed
 

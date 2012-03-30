@@ -1,6 +1,9 @@
 @import 'nib'
 
+black = #000
+lightblack = #333
 gray = #999
+white = #fff
 
 *
   box-sizing: border-box
@@ -15,8 +18,23 @@ body
   border: 1px solid rgba(0, 0, 0, .1)
   border-radius: 6px
   border-top-left-radius: 13
-  background-color: #fff
+  background-color: white
   background-clip: padding-box
+
+.avatar
+  position: absolute
+  top: 12px
+  left: 12px
+  width: 48px
+  height: 48px
+  border-radius: 5px
+
+.size32
+  width: 32px
+  height: 32px
+
+.username
+  color: gray
 
 .navbar-fixed-top .container, .navbar-fixed-bottom .container, .container
   width: 885px
@@ -29,42 +47,112 @@ body
   margin-left: 15px
   padding: 5px 0
 
-.nav > li > a
-  font-weight: bolder
-  font-weight: padding-box
-
-// .icon
-//   width: 21px
-//   height: 22px
-//   background-image: url('../images/twitter_web_sprite_icons.png')
-//   &.nav-home
-//     width: 21px
-//     background-position: 0 -50px
-.login-note
-  padding: 10px
-.sign-in-button
-  margin-top: 10px
-  cursor: pointer
+// Header.
+.nav
+  &-item
+    &-icon
+      position: absolute
+      display: inline-block
+      width: 21px
+      height: 22px
+      background-image: url('../images/twitter_web_sprite_icons.png')
+      background-position: 0 0
+      background-repeat: no-repeat
+      &-container
+        top: 8px
+      .nav-item-link &
+        background-position: 0px -50px
+      .nav-item-link.active &
+        background-position: 0px -110px
+      .nav-item-link[href*='mentions'] &
+        background-position: -80px -50px
+      .nav-item-link[href*='mentions'].active &
+        background-position: -80px -110px
+      .nav-item-link[href*='logout'] &
+        background-position: -120px -50px
+      .nav-item-link[href*='logout'].active &
+        background-position: -120px -110px
+    &-link
+      font-weight: bolder
+      font-weight: padding-box
+    &-title
+      margin-left: 26px
+      font-size: 12px
 
 h1
   padding-bottom: 5px
 
+// Sidebar.
 .sidebar
-  padding: 12px
   textarea
     width: 100%
     height: 100px
 
+.account-summary
+  position: relative
+  padding-bottom: 0
+  &-container
+    padding: 12px
+  &-avatar
+    top: 0
+    left: 0
+  &-content
+    margin-left: 42px
+  &-full-name
+    display: block
+    font-size: 14px
+  &-metadata
+    font-size: 11px
+    color: gray
+
+.stats
+  margin: 0
+  padding: 0 12px
+  overflow: hidden
+  list-style: none
+  border: solid #e8e8e8
+  border-width: 1px 0 1px 0
+  & > li
+    float: left
+    padding: 7px 12px
+    font-size: 10px
+    line-height: 16px
+    text-transform: uppercase
+    color: gray
+    border: solid #e8e8e8
+    border-width: 0 1px 0 0
+    &:first-child
+      padding-left: 0
+    &:last-child
+      border-right: 0
+    strong
+      display: block
+      font-size: 14px
+      color: lightblack
+
 .composable-tweet
+  padding: 12px
+  border-radius: 6px
+  background: #f8f8f8
   &-info
-    float: right
+    text-align: right
+  &-text
+    padding: 10px
   &-character-count
     color: gray
     &-invalid
       color: #b83535
 
+// Main content.
+.login-note
+  padding: 10px
+
+.sign-in-button
+  margin-top: 10px
+  cursor: pointer
+
 .tweets-header
-  padding-left: 12px
+  padding: 0 0 6px 12px
   border-bottom: 1px solid #e8e8e8
 
 .tweet
@@ -72,11 +160,10 @@ h1
   min-height: 75px
   padding: 9px 12px 9px
   border-bottom: 1px solid #e8e8e8
-  // border-radius: 5px
   &-content
     margin-left: 58px
   &-author-full-name
-    color: #333
+    color: lightblack
   &-author-username
     color: gray
   &-text
@@ -84,14 +171,3 @@ h1
     word-wrap: break-word
   &-footer
     overflow: hidden
-
-.avatar
-  position: absolute
-  top: 12px
-  left: 12px
-  width: 48px
-  height: 48px
-  border-radius: 5px
-
-.username
-  color: gray

@@ -6,7 +6,7 @@ module.exports = class ApplicationView # Do not inherit from View
   # Set your application name here so
   # the document title is set properly to
   # “Site title – Controller title” (see adjustTitle)
-  siteTitle = 'Chaplin Example Application'
+  siteTitle = 'Tweet your brunch'
 
   previousController: null
 
@@ -194,7 +194,7 @@ not found on #{controllerName} controller"
 
     else
       throw new Error "ApplicationView#adjustURL: controller for
-#{controllerName} does not provide a historyURL"
+#{controller} does not provide a historyURL"
 
     # Pass to the router to actually change the current URL
     # (call history.pushState)

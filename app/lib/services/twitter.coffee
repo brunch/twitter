@@ -49,12 +49,19 @@ module.exports = class Twitter extends ServiceProvider
     callback @T
 
   loginStatusHandler: (response) =>
-    return unless response
+    return unless response.currentUser
     user = response.currentUser
     for attr, value of user when typeof value is 'function'
       @api[attr] = value
+    @api.updateStatus = response.Status.update
     mediator.publish 'serviceProviderSession',
       provider: this
       userId: user.id
       accessToken: twttr.anywhere.token
     mediator.publish 'userData', user.attributes
+
+  # Handler for the global logout event
+  logout: ->
+    # Clear the status properties
+    @T.logout()
+    @T = null

@@ -1,10 +1,28 @@
-{{#if _identity}}
-  <textarea class="composable-tweet-text" placeholder="What's happening?"></textarea>
-  <div class="composable-tweet-info">
-    <span class="composable-tweet-character-count">140</span>
-    <button class="btn btn-primary composable-tweet-send-button">Tweet</button>
+{{#if_logged_in}}
+  {{#with_user}}
+    <div class="account-summary-container">
+      <div class="account-summary">
+  	    <img class="account-summary-avatar avatar size32" src="{{profile_image_url}}" alt="{{name}}">
+  	    <div class="account-summary-content">
+    	    <strong class="account-summary-full-name">{{name}}</strong>
+    	    <small class="account-summary-metadata">View my profile page</small>
+  	    </div>
+      </div>
+    </div>
+    <ul class="stats">
+      <li class="stat-tweets"><strong>{{statuses_count}}</strong> tweets</li>
+      <li class="stat-following"><strong>{{friends_count}}</strong> following</li>
+      <li class="stat-followers"><strong>{{followers_count}}</strong> followers</li>
+    </ul>
+  {{/with_user}}
+  <div class="composable-tweet">
+    <textarea class="composable-tweet-text" placeholder="What's happening?"></textarea>
+    <div class="composable-tweet-info">
+      <span class="composable-tweet-character-count">140</span>
+      <button class="composable-tweet-send-button btn btn-primary" disabled>Tweet</button>
+    </div>
   </div>
 {{else}}
   Tweet your brunch is an example app
   built with <a href="http://brunch.io/">Brunch</a> &amp; <a href="https://github.com/paulmillr/brunch-with-chaplin">Brunch with Chaplin</a>
-{{/if}}
+{{/if_logged_in}}

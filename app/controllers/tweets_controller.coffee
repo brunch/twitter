@@ -3,7 +3,7 @@ Tweets = require 'models/tweets'
 TweetsView = require 'views/tweets_view'
 
 module.exports = class TweetsController extends Controller
-  historyURL: 'tweets'
+  historyURL: ''
 
   index: (params) ->
     #console.debug 'PostsController#index'

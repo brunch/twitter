@@ -12,6 +12,8 @@ module.exports = class Router
     # ---- THE INTREDASTING PART STARTS: ---- #
 
     @match '', 'tweets#index'
+    # @match 'mentions', 'tweets#mentions'
+    @match 'logout', 'session#logout'
     @match '@:user', 'user#show'
     # @match 'mentions', 'mentions#index'
     # @match 'messages', 'messages#index'
