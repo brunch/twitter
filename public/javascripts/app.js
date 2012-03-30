@@ -2303,12 +2303,14 @@
     };
 
     SidebarView.prototype.createTweet = function(event) {
-      var api, text,
+      var $textEl, api, text,
         _this = this;
+      $textEl = this.$('.composable-tweet-text');
       api = mediator.user.get('provider').api;
-      text = this.$('.composable-tweet-text').val();
+      text = $textEl.val();
       return api.updateStatus(text, function(tweet) {
-        return console.log('New tweet:', tweet);
+        console.debug('New tweet:', tweet);
+        return $textEl.val('');
       });
     };
 

@@ -27,6 +27,7 @@ module.exports = class SidebarView extends View
       @model = null
     @render()
 
+  # TODO: move this to separate view.
   updateCharacterCount: (event) =>
     max = 140
     $charCount = @$('.composable-tweet-character-count')
@@ -43,7 +44,9 @@ module.exports = class SidebarView extends View
       $send.removeAttr 'disabled'
 
   createTweet: (event) =>
+    $textEl = @$('.composable-tweet-text')
     api = mediator.user.get('provider').api
-    text = @$('.composable-tweet-text').val()
+    text = $textEl.val()
     api.updateStatus text, (tweet) =>
-      console.log 'New tweet:', tweet
+      console.debug 'New tweet:', tweet
+      $textEl.val('')
