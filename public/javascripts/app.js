@@ -2327,7 +2327,7 @@
   var foundHelper, self=this;
 
 
-  return "<div class=\"sign-in\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
+  return "<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
   }
 }));
 (this.require.define({
@@ -2423,7 +2423,7 @@ function program1(depth0,data) {
 function program3(depth0,data) {
   
   
-  return "\n  Tweet your brunch is a simple twitter client built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>.\n";}
+  return "\n  <div class=\"app-description\">\n    Tweet your brunch is a simple twitter client built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>.\n  </div>\n";}
 
   foundHelper = helpers.if_logged_in;
   stack1 = foundHelper || depth0.if_logged_in;
