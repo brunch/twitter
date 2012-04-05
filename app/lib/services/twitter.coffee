@@ -8,10 +8,13 @@ module.exports = class Twitter extends ServiceProvider
   api: {}
 
   loadSDK: ->
-    # Load a script like this:
+    return if @state() is 'resolved' or @loading
+    @loading = true
+
     utils.loadLib "http://platform.twitter.com/anywhere.js?id=#{consumerKey}&v=1", @sdkLoadHandler, @reject
 
   sdkLoadHandler: =>
+    @loading = false
     # Init the SDK, then resolve
     twttr.anywhere (T) =>
       mediator.publish 'sdkLoaded'
@@ -29,7 +32,7 @@ module.exports = class Twitter extends ServiceProvider
 
   # Callback for the login popup
   loginHandler: (loginContext, response) =>
-
+    console.debug 'Twitter#loginHandler'
     if response
       # Publish successful login
       mediator.publish 'loginSuccessful',
@@ -49,16 +52,18 @@ module.exports = class Twitter extends ServiceProvider
     callback @T
 
   loginStatusHandler: (response) =>
-    return unless response.currentUser
-    user = response.currentUser
-    for attr, value of user when typeof value is 'function'
-      @api[attr] = value
-    @api.updateStatus = response.Status.update
-    mediator.publish 'serviceProviderSession',
-      provider: this
-      userId: user.id
-      accessToken: twttr.anywhere.token
-    mediator.publish 'userData', user.attributes
+    if response.currentUser
+      user = response.currentUser
+      for attr, value of user when typeof value is 'function'
+        @api[attr] = value
+      @api.updateStatus = response.Status.update
+      mediator.publish 'serviceProviderSession',
+        provider: this
+        userId: user.id
+        accessToken: twttr.anywhere.token
+      mediator.publish 'userData', user.attributes
+    else
+      mediator.publish 'logout'
 
   # Handler for the global logout event
   logout: ->
