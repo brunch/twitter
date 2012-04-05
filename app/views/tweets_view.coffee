@@ -15,10 +15,6 @@ module.exports = class TweetsView extends CollectionView
   initialize: ->
     super # Will render the list itself and all items
     @subscribeEvent 'loginStatus', @showHideLoginNote
-    mediator.subscribe 'sdkLoaded', =>
-      twttr.anywhere (T) =>
-        @delegate 'click', '.sign-in-button', =>
-          T.signIn()
 
   # The most important method a class inheriting from CollectionView
   # must overwrite.
@@ -28,7 +24,6 @@ module.exports = class TweetsView extends CollectionView
 
   # Show/hide a login appeal if not logged in
   showHideLoginNote: ->
-    @$('.login-note').css 'display', if mediator.user then 'none' else 'block'
     @$('.tweets, .tweets-header').css 'display', if mediator.user then 'block' else 'none'
 
   render: ->

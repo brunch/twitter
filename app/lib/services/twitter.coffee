@@ -28,7 +28,7 @@ module.exports = class Twitter extends ServiceProvider
   # Trigger login popup
   triggerLogin: (loginContext) ->
     callback = _(@loginHandler).bind(this, @loginHandler)
-    twttr.login callback
+    @T.signIn callback
 
   # Callback for the login popup
   loginHandler: (loginContext, response) =>

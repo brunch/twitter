@@ -44,7 +44,7 @@ module.exports = class LoginView extends View
       serviceProvider.fail failed
 
   loginWith: (serviceProviderName, serviceProvider, e) ->
-    #console.debug 'LoginView#loginWith', serviceProviderName, serviceProvider
+    console.debug 'LoginView#loginWith', serviceProviderName, serviceProvider
     e.preventDefault()
     return unless serviceProvider.isLoaded()
     mediator.publish 'login:pickService', serviceProviderName
