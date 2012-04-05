@@ -12,8 +12,6 @@ module.exports = class SessionController extends Controller
   @serviceProviders =
     twitter: new Twitter()
 
-  historyURL: 'logout'
-
   # Was the login status already determined?
   loginStatusDetermined: false
 
