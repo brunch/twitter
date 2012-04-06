@@ -25,7 +25,7 @@ module.exports = class Tweets extends Collection
     return unless provider.name is 'twitter'
 
     @trigger 'loadStart'
-    provider.api.homeTimeline @processTweets
+    provider.T.currentUser.homeTimeline @processTweets
 
   processTweets: (response) =>
     console.debug 'Tweets#processTweets', response, response.array
