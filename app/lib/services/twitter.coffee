@@ -5,7 +5,10 @@ ServiceProvider = require 'lib/services/service_provider'
 module.exports = class Twitter extends ServiceProvider
   consumerKey = 'w0uohox9lTgpKETJmscYIQ'
   name: 'twitter'
-  api: {}
+
+  constructor: ->
+    super
+    @subscribeEvent '!logout', @logout
 
   loadSDK: ->
     return if @state() is 'resolved' or @loading
@@ -25,48 +28,66 @@ module.exports = class Twitter extends ServiceProvider
     # Return a Boolean
     Boolean window.twttr
 
+  publish: (event, callback) ->
+    @T.trigger event, callback
+
+  subscribe: (event, callback) ->
+    @T.bind event, callback
+
+  unsubscribe: (event) ->
+    @T.unbind event
+
   # Trigger login popup
   triggerLogin: (loginContext) ->
-    callback = _(@loginHandler).bind(this, @loginHandler)
-    @T.signIn callback
+    callback = _(@loginHandler).bind(this, loginContext)
+    @T.signIn()
+    @subscribe 'authComplete', (event, currentUser, accessToken) ->
+      callback {currentUser, accessToken}
+    @subscribe 'signOut', ->
+      console.log 'SIGNOUT EVENT'
+      callback()
+
+  # Publish session & userData events and
+  # add all twttr api methods to @api.
+  publishSession: (response) ->
+    user = response.currentUser
+
+    @api = {}
+    for attr, value of user when typeof value is 'function'
+      @api[attr] = value
+    @api.updateStatus = response.Status.update
+
+    mediator.publish 'serviceProviderSession',
+      provider: this
+      userId: user.id
+      accessToken: response.accessToken or twttr.anywhere.token
+    mediator.publish 'userData', user.attributes
 
   # Callback for the login popup
   loginHandler: (loginContext, response) =>
-    console.debug 'Twitter#loginHandler'
+    console.debug 'Twitter#loginHandler', loginContext, response
     if response
       # Publish successful login
       mediator.publish 'loginSuccessful',
         provider: this, loginContext: loginContext
 
       # Publish the session
-      mediator.publish 'serviceProviderSession',
-        provider: this
-        userId: response.userId
-        accessToken: response.accessToken
-        # etc.
-
+      @publishSession response
     else
       mediator.publish 'loginFail', provider: this, loginContext: loginContext
 
   getLoginStatus: (callback = @loginStatusHandler, force = false) ->
+    console.debug 'Twitter#getLoginStatus'
     callback @T
 
   loginStatusHandler: (response) =>
+    console.debug 'Twitter#loginStatusHandler', response
     if response.currentUser
-      user = response.currentUser
-      for attr, value of user when typeof value is 'function'
-        @api[attr] = value
-      @api.updateStatus = response.Status.update
-      mediator.publish 'serviceProviderSession',
-        provider: this
-        userId: user.id
-        accessToken: twttr.anywhere.token
-      mediator.publish 'userData', user.attributes
+      @publishSession response
     else
       mediator.publish 'logout'
 
   # Handler for the global logout event
   logout: ->
-    # Clear the status properties
-    @T.logout()
-    @T = null
+    console.log 'Twitter#logout'
+    twttr?.anywhere?.signOut?()

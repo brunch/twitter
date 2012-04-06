@@ -1,3 +1,4 @@
+mediator = require 'mediator'
 View = require 'views/view'
 template = require './templates/navigation'
 

@@ -14,6 +14,7 @@ module.exports = class Router
     @match '', 'tweets#index'
     # @match 'mentions', 'tweets#mentions'
     @match '@:user', 'user#show'
+    @match 'logout', 'navigation#logout'
     # @match 'mentions', 'mentions#index'
     # @match 'messages', 'messages#index'
 
