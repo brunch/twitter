@@ -52,11 +52,6 @@ module.exports = class Twitter extends ServiceProvider
   publishSession: (response) ->
     user = response.currentUser
 
-    @api = {}
-    for attr, value of user when typeof value is 'function'
-      @api[attr] = value
-    @api.updateStatus = response.Status.update
-
     mediator.publish 'serviceProviderSession',
       provider: this
       userId: user.id
