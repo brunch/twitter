@@ -14,4 +14,4 @@ module.exports = class NavigationController extends Controller
 
   logout: ->
     mediator.publish '!logout'
-    # mediator.router.changeURL('')
+    Backbone.history.navigate('//')
