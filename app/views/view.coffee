@@ -206,7 +206,7 @@ function'
   # Main render function
   # Always bind it to the view instance
   render: =>
-    #console.debug "View#render\n\t", this, "\n\tel:", @el, "\n\tmodel/collection:", (@model or @collection), "\n\tdisposed:", @disposed
+    # console.debug "View#render\n\t", this, "\n\tel:", @el, "\n\tmodel/collection:", (@model or @collection), "\n\tdisposed:", @disposed
 
     return if @disposed
 
@@ -244,11 +244,11 @@ function'
   # This method is called after a specific `render` of a derived class
 
   afterRender: ->
-    #console.debug 'View#afterRender', this
+    # console.debug 'View#afterRender', this
 
     # Automatically append to DOM if the container element is set
     if @$container
-      #console.debug '\tappend to DOM'
+      # console.debug '\tappend to DOM'
       @$container.append @el
       # Trigger an event
       @trigger 'addedToDOM'
