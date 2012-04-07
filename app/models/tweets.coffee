@@ -28,12 +28,15 @@ module.exports = class Tweets extends Collection
     provider.T.currentUser.homeTimeline @processTweets
 
   processTweets: (response) =>
-    console.debug 'Tweets#processTweets', response, response.array
+    console.debug 'Tweets#processTweets', response
 
     # Trigger before updating the collection to hide the loading spinner
     @trigger 'load'
 
-    tweets = if response and response.array then response.array else []
+    tweets = if response?.array
+      _(response.array).map (tweet) => tweet.attributes
+    else
+      []
     
     # Update the collection
     @reset tweets
