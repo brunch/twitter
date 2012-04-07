@@ -43,12 +43,10 @@ module.exports = class StatusView extends View
         console.log 'Tweet error', error
       success: (model, attributes) =>
         console.log 'Tweet success', attributes
+        @$('.status-text').val('').trigger('keydown')
 
   render: =>
     super
-    console.log 'Render', this
-    # @delegate 'keyup', '.status-text', @updateStatusText
     _(['keyup', 'keydown']).each (eventName) =>
       @delegate eventName, '.status-text', @updateStatusText
-    # @modelBind 'change:text', @updateCharacterCount
     @delegate 'click', '.status-create-button', @createStatus
