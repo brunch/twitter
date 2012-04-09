@@ -18,5 +18,6 @@ module.exports = class Status extends Model
     timeout = setTimeout options.error.bind(options, 'Timeout error'), 4000
     provider.T.Status.update model.get('text'), (tweet) =>
       window.clearTimeout(timeout)
+      mediator.publish 'tweet:add', tweet.attributes
       options.success(tweet.attributes)
     return

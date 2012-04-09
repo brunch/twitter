@@ -14,6 +14,7 @@ module.exports = class Tweets extends Collection
     @getTweets()
     @subscribeEvent 'login', @getTweets
     @subscribeEvent 'logout', @reset
+    @subscribeEvent 'tweet:add', @addTweet
 
   getTweets: ->
     console.debug 'Tweets#getTweets'
@@ -43,3 +44,6 @@ module.exports = class Tweets extends Collection
     
     # Resolve the Deferred
     @resolve()
+
+  addTweet: (tweet) =>
+    @add tweet, at: 0
