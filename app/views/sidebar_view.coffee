@@ -1,6 +1,7 @@
 mediator = require 'mediator'
-CompositeView = require 'views/composite_view'
-StatusView = require 'views/status_view'
+CompositeView = require './composite_view'
+StatsView = require './stats_view'
+StatusView = require './status_view'
 template = require './templates/sidebar'
 
 module.exports = class SidebarView extends CompositeView
@@ -16,6 +17,7 @@ module.exports = class SidebarView extends CompositeView
   initialize: ->
     super
     @attachView new StatusView()
+    @attachView new StatsView()
     @subscribeEvent 'loginStatus', @loginStatusHandler
     @subscribeEvent 'userData', @render
 

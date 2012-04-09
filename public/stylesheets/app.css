@@ -3993,7 +3993,6 @@ body{padding-top:40px;background-color:#352726}
 .module{margin-bottom:10px;line-height:16px;border:1px solid rgba(0,0,0,0.10);-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;border-top-left-radius:13;background-color:#fff;-webkit-background-clip:padding-box;-moz-background-clip:padding-box;background-clip:padding-box}
 .avatar{position:absolute;top:12px;left:12px;width:48px;height:48px;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px}
 .size32{width:32px;height:32px}
-.username{color:#999}
 .navbar-fixed-top .container,.navbar-fixed-bottom .container,.container{width:885px}
 .outer-container{padding:15px;background:rgba(255,255,255,0.20)}
 .main-content{margin-left:15px;padding:5px 0}
@@ -4034,4 +4033,6 @@ h1{padding-bottom:5px}
 .tweet-author-full-name{color:#333}
 .tweet-author-username{color:#999}
 .tweet-text{-webkit-margin-after:0;word-wrap:break-word}
-.tweet-footer{overflow:hidden}
+.tweet-footer{overflow:hidden;color:#999}
+.tweet-created-at,.tweet-source > a{color:#999}
+.tweet-retweeter{margin-bottom:0}

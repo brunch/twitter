@@ -1338,8 +1338,31 @@
     return Handlebars.helpers["with"].call(this, context, options);
   });
 
+  Handlebars.registerHelper('transform_if_retweeted', function(options) {
+    var data;
+    if (this.retweeted_status) {
+      data = _.clone(this.retweeted_status);
+      data.retweeter = this.user;
+      return options.fn(data);
+    } else {
+      return options.fn(this);
+    }
+  });
+
   Handlebars.registerHelper('auto_link', function(options) {
     return new Handlebars.SafeString(twttr.txt.autoLink(options.fn(this)));
+  });
+
+  Handlebars.registerHelper('format_date', function(options) {
+    var date;
+    date = new Date(options.fn(this));
+    return new Handlebars.SafeString(moment(date).fromNow());
+  });
+
+  Handlebars.registerHelper('unless_is_web', function(source, options) {
+    var string;
+    string = source === 'web' ? '' : options.fn(this);
+    return new Handlebars.SafeString(string);
   });
 
 }).call(this);
@@ -1687,11 +1710,11 @@
     Tweets.prototype.processTweets = function(response) {
       var tweets,
         _this = this;
-      console.debug('Tweets#processTweets', response);
-      this.trigger('load');
       tweets = (response != null ? response.array : void 0) ? _(response.array).map(function(tweet) {
         return tweet.attributes;
       }) : [];
+      console.debug('Tweets#processTweets', tweets);
+      this.trigger('load');
       this.reset(tweets);
       return this.resolve();
     };
@@ -2399,16 +2422,18 @@
 (this.require.define({
   "views/sidebar_view": function(exports, require, module) {
     (function() {
-  var CompositeView, SidebarView, StatusView, mediator, template,
+  var CompositeView, SidebarView, StatsView, StatusView, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  CompositeView = require('views/composite_view');
+  CompositeView = require('./composite_view');
 
-  StatusView = require('views/status_view');
+  StatsView = require('./stats_view');
+
+  StatusView = require('./status_view');
 
   template = require('./templates/sidebar');
 
@@ -2432,6 +2457,7 @@
     SidebarView.prototype.initialize = function() {
       SidebarView.__super__.initialize.apply(this, arguments);
       this.attachView(new StatusView());
+      this.attachView(new StatsView());
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
       return this.subscribeEvent('userData', this.render);
     };
@@ -2456,8 +2482,52 @@
 (this.require.define({
   "views/stats_view": function(exports, require, module) {
     (function() {
+  var StatsView, View, mediator, template,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
+  mediator = require('mediator');
 
+  View = require('views/view');
+
+  template = require('./templates/stats');
+
+  module.exports = StatsView = (function(_super) {
+
+    __extends(StatsView, _super);
+
+    function StatsView() {
+      this.loginStatusHandler = __bind(this.loginStatusHandler, this);
+      StatsView.__super__.constructor.apply(this, arguments);
+    }
+
+    StatsView.template = template;
+
+    StatsView.prototype.className = 'stats';
+
+    StatsView.prototype.tagName = 'ul';
+
+    StatsView.prototype.containerSelector = '#stats-container';
+
+    StatsView.prototype.initialize = function() {
+      StatsView.__super__.initialize.apply(this, arguments);
+      this.subscribeEvent('loginStatus', this.loginStatusHandler);
+      return this.subscribeEvent('userData', this.render);
+    };
+
+    StatsView.prototype.loginStatusHandler = function(loggedIn) {
+      if (loggedIn) {
+        this.model = mediator.user;
+      } else {
+        this.model = null;
+      }
+      return this.render();
+    };
+
+    return StatsView;
+
+  })(View);
 
 }).call(this);
 
@@ -2500,8 +2570,6 @@
 
     StatusView.prototype.containerSelector = '#status-container';
 
-    StatusView.prototype.autoRender = false;
-
     StatusView.prototype.initialize = function() {
       StatusView.__super__.initialize.apply(this, arguments);
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
@@ -2526,27 +2594,29 @@
         $charCount.removeClass('status-character-count-invalid');
         return $createButton.removeAttr('disabled');
       } else {
-        $charCount.addClass('status-character-count-invalid');
+        if (count !== 140) $charCount.addClass('status-character-count-invalid');
         return $createButton.attr('disabled', 'disabled');
       }
     };
 
     StatusView.prototype.updateStatusText = function(event) {
-      var text;
+      var count, text, valid;
       text = $(event.currentTarget).val();
-      return this.updateCharacterCount(this.model.set({
+      valid = this.model.set({
         text: text
-      }), this.model.calcCharCount(text.length));
+      });
+      count = this.model.calcCharCount(text.length);
+      return this.updateCharacterCount(valid, count);
     };
 
     StatusView.prototype.createStatus = function(event) {
       var _this = this;
       return this.model.save({}, {
         error: function(model, error) {
-          return console.log('Tweet error', error);
+          return console.error('Tweet error', error);
         },
         success: function(model, attributes) {
-          console.log('Tweet success', attributes);
+          console.debug('Tweet success', attributes);
           return _this.$('.status-text').val('').trigger('keydown');
         }
       });
@@ -2651,22 +2721,7 @@ function program1(depth0,data) {
   stack1 = foundHelper || depth0.name;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong>\n  	    <small class=\"account-summary-metadata\">View my profile page</small>\n	    </div>\n    </div>\n  </div>\n  <ul class=\"stats\">\n    <li class=\"stat-tweets\"><strong>";
-  foundHelper = helpers.statuses_count;
-  stack1 = foundHelper || depth0.statuses_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "statuses_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> tweets</li>\n    <li class=\"stat-following\"><strong>";
-  foundHelper = helpers.friends_count;
-  stack1 = foundHelper || depth0.friends_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "friends_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> following</li>\n    <li class=\"stat-followers\"><strong>";
-  foundHelper = helpers.followers_count;
-  stack1 = foundHelper || depth0.followers_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> followers</li>\n  </ul>\n  <div class=\"status-container\" id=\"status-container\"></div>\n";
+  buffer += escapeExpression(stack1) + "</strong>\n  	    <small class=\"account-summary-metadata\">View my profile page</small>\n	    </div>\n    </div>\n  </div>\n  <div class=\"stats-container\" id=\"stats-container\"></div>\n  <div class=\"status-container\" id=\"status-container\"></div>\n";
   return buffer;}
 
 function program3(depth0,data) {
@@ -2691,9 +2746,25 @@ function program3(depth0,data) {
   "views/templates/stats": function(exports, require, module) {
     module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
-  var buffer = "", foundHelper, self=this;
+  var buffer = "", stack1, foundHelper, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
 
 
+  buffer += "<li class=\"stat-tweets\"><strong>";
+  foundHelper = helpers.statuses_count;
+  stack1 = foundHelper || depth0.statuses_count;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "statuses_count", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</strong> tweets</li>\n<li class=\"stat-following\"><strong>";
+  foundHelper = helpers.friends_count;
+  stack1 = foundHelper || depth0.friends_count;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "friends_count", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</strong> following</li>\n<li class=\"stat-followers\"><strong>";
+  foundHelper = helpers.followers_count;
+  stack1 = foundHelper || depth0.followers_count;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</strong> followers</li>\n";
   return buffer;});
   }
 }));
@@ -2729,6 +2800,87 @@ function program1(depth0,data) {
 
 function program1(depth0,data) {
   
+  var buffer = "", stack1, stack2;
+  buffer += "\n  <div class=\"tweet-content\">\n    <header class=\"tweet-header\">\n      <a href=\"https://twitter.com/";
+  foundHelper = helpers.user;
+  stack1 = foundHelper || depth0.user;
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n        <img class=\"avatar\" src=\"";
+  foundHelper = helpers.user;
+  stack1 = foundHelper || depth0.user;
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profile_image_url);
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profile_image_url", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\" alt=\"\" />\n        <strong class=\"tweet-author-full-name\">\n          ";
+  foundHelper = helpers.user;
+  stack1 = foundHelper || depth0.user;
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.name);
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.name", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\n        </strong>\n      </a>\n    </header>\n    <p class=\"tweet-text\">";
+  foundHelper = helpers.auto_link;
+  stack1 = foundHelper || depth0.auto_link;
+  tmp1 = self.program(2, program2, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</p>\n    <footer class=\"tweet-footer\">\n      <a href=\"http://twitter.com/";
+  foundHelper = helpers.user;
+  stack1 = foundHelper || depth0.user;
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/status/";
+  foundHelper = helpers.id_str;
+  stack1 = foundHelper || depth0.id_str;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id_str", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n        <time class=\"tweet-created-at\" datetime=\"";
+  foundHelper = helpers.created_at;
+  stack1 = foundHelper || depth0.created_at;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n          ";
+  foundHelper = helpers.format_date;
+  stack1 = foundHelper || depth0.format_date;
+  tmp1 = self.program(4, program4, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n        </time>\n      </a>\n      ";
+  foundHelper = helpers.source;
+  stack1 = foundHelper || depth0.source;
+  foundHelper = helpers.unless_is_web;
+  stack2 = foundHelper || depth0.unless_is_web;
+  tmp1 = self.program(6, program6, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n      ";
+  foundHelper = helpers.retweeter;
+  stack1 = foundHelper || depth0.retweeter;
+  stack2 = helpers['if'];
+  tmp1 = self.program(8, program8, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n    </footer>\n  </div>\n";
+  return buffer;}
+function program2(depth0,data) {
+  
   var stack1;
   foundHelper = helpers.text;
   stack1 = foundHelper || depth0.text;
@@ -2736,27 +2888,47 @@ function program1(depth0,data) {
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "text", { hash: {} }); }
   return escapeExpression(stack1);}
 
-  buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"https://twitter.com/";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
+function program4(depth0,data) {
+  
+  var stack1;
+  foundHelper = helpers.created_at;
+  stack1 = foundHelper || depth0.created_at;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
+  return escapeExpression(stack1);}
+
+function program6(depth0,data) {
+  
+  var buffer = "", stack1;
+  buffer += "\n        via <span class=\"tweet-source\">";
+  foundHelper = helpers.source;
+  stack1 = foundHelper || depth0.source;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "source", { hash: {} }); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</span>\n      ";
+  return buffer;}
+
+function program8(depth0,data) {
+  
+  var buffer = "", stack1;
+  buffer += "\n        <p class=\"tweet-retweeter\">\n          Retweeted by <a class=\"tweet-retweeter-username\" href=\"https://twitter.com/";
+  foundHelper = helpers.retweeter;
+  stack1 = foundHelper || depth0.retweeter;
   stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n      <img class=\"avatar\" src=\"";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profile_image_url);
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">";
+  foundHelper = helpers.retweeter;
+  stack1 = foundHelper || depth0.retweeter;
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profile_image_url", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\" alt=\"Paul Miller\" />\n      <strong class=\"tweet-author-full-name\">\n        ";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\n      </strong>\n    </a>\n  </header>\n  <p class=\"tweet-text\">";
-  foundHelper = helpers.auto_link;
-  stack1 = foundHelper || depth0.auto_link;
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</a>\n        </p>\n      ";
+  return buffer;}
+
+  foundHelper = helpers.transform_if_retweeted;
+  stack1 = foundHelper || depth0.transform_if_retweeted;
   tmp1 = self.program(1, program1, data);
   tmp1.hash = {};
   tmp1.fn = tmp1;
@@ -2764,7 +2936,7 @@ function program1(depth0,data) {
   if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
   else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</p>\n  <footer class=\"tweet-footer\"></footer>\n</div>\n";
+  buffer += "\n";
   return buffer;});
   }
 }));

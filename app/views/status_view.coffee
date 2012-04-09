@@ -8,7 +8,6 @@ module.exports = class StatusView extends View
   id: 'status'
   className: 'status'
   containerSelector: '#status-container'
-  autoRender: no
 
   initialize: ->
     super
@@ -30,19 +29,22 @@ module.exports = class StatusView extends View
       $charCount.removeClass 'status-character-count-invalid'
       $createButton.removeAttr 'disabled'
     else
-      $charCount.addClass 'status-character-count-invalid'
+      # TODO: check this in model.
+      $charCount.addClass 'status-character-count-invalid' unless count is 140
       $createButton.attr 'disabled', 'disabled'
 
   updateStatusText: (event) =>
     text = $(event.currentTarget).val()
-    @updateCharacterCount (@model.set {text}), @model.calcCharCount text.length
+    valid = @model.set {text}
+    count = @model.calcCharCount text.length
+    @updateCharacterCount valid, count
 
   createStatus: (event) =>
     @model.save {},
       error: (model, error) =>
-        console.log 'Tweet error', error
+        console.error 'Tweet error', error
       success: (model, attributes) =>
-        console.log 'Tweet success', attributes
+        console.debug 'Tweet success', attributes
         @$('.status-text').val('').trigger('keydown')
 
   render: =>
