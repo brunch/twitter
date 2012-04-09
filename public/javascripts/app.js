@@ -1338,6 +1338,10 @@
     return Handlebars.helpers["with"].call(this, context, options);
   });
 
+  Handlebars.registerHelper('auto_link', function(options) {
+    return new Handlebars.SafeString(twttr.txt.autoLink(options.fn(this)));
+  });
+
 }).call(this);
 
   }
@@ -2721,10 +2725,18 @@ function program1(depth0,data) {
   "views/templates/tweet": function(exports, require, module) {
     module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
+  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
 
+function program1(depth0,data) {
+  
+  var stack1;
+  foundHelper = helpers.text;
+  stack1 = foundHelper || depth0.text;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "text", { hash: {} }); }
+  return escapeExpression(stack1);}
 
-  buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"http://twitter.com/";
+  buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"https://twitter.com/";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
   stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
@@ -2742,18 +2754,17 @@ function program1(depth0,data) {
   stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.name);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\n      </strong>\n      <span class=\"username tweet-author-username\">\n        @";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\n      </span>\n    </a>\n  </header>\n  <p class=\"tweet-text\">";
-  foundHelper = helpers.text;
-  stack1 = foundHelper || depth0.text;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "text", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</p>\n  <footer class=\"tweet-footer\"></footer>\n</div>\n";
+  buffer += escapeExpression(stack1) + "\n      </strong>\n    </a>\n  </header>\n  <p class=\"tweet-text\">";
+  foundHelper = helpers.auto_link;
+  stack1 = foundHelper || depth0.auto_link;
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</p>\n  <footer class=\"tweet-footer\"></footer>\n</div>\n";
   return buffer;});
   }
 }));

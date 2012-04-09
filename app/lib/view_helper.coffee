@@ -51,3 +51,6 @@ Handlebars.registerHelper 'without', (context, options) ->
 Handlebars.registerHelper 'with_user', (options) ->
   context = mediator.user.toJSON() or {}
   Handlebars.helpers.with.call(this, context, options)
+
+Handlebars.registerHelper 'auto_link', (options) ->
+  new Handlebars.SafeString twttr.txt.autoLink options.fn this

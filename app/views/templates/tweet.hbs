@@ -1,15 +1,12 @@
 <div class="tweet-content">
   <header class="tweet-header">
-    <a href="http://twitter.com/{{user.screen_name}}">
+    <a href="https://twitter.com/{{user.screen_name}}">
       <img class="avatar" src="{{user.profile_image_url}}" alt="Paul Miller" />
       <strong class="tweet-author-full-name">
         {{user.name}}
       </strong>
-      <span class="username tweet-author-username">
-        @{{user.screen_name}}
-      </span>
     </a>
   </header>
-  <p class="tweet-text">{{text}}</p>
+  <p class="tweet-text">{{#auto_link}}{{text}}{{/auto_link}}</p>
   <footer class="tweet-footer"></footer>
 </div>
