@@ -215,11 +215,13 @@
 (this.require.define({
   "controllers/navigation_controller": function(exports, require, module) {
     (function() {
-  var Controller, Navigation, NavigationController, NavigationView,
+  var Controller, Navigation, NavigationController, NavigationView, mediator,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   Controller = require('controllers/controller');
+
+  mediator = require('mediator');
 
   Navigation = require('models/navigation');
 
@@ -233,12 +235,19 @@
       NavigationController.__super__.constructor.apply(this, arguments);
     }
 
+    NavigationController.prototype.historyURL = 'logout';
+
     NavigationController.prototype.initialize = function() {
       NavigationController.__super__.initialize.apply(this, arguments);
       this.model = new Navigation();
       return this.view = new NavigationView({
         model: this.model
       });
+    };
+
+    NavigationController.prototype.logout = function() {
+      mediator.publish('!logout');
+      return Backbone.history.navigate('//');
     };
 
     return NavigationController;
@@ -284,8 +293,6 @@
     SessionController.serviceProviders = {
       twitter: new Twitter()
     };
-
-    SessionController.prototype.historyURL = 'logout';
 
     SessionController.prototype.loginStatusDetermined = false;
 
@@ -407,13 +414,15 @@
 (this.require.define({
   "controllers/sidebar_controller": function(exports, require, module) {
     (function() {
-  var Controller, NavigationController, SidebarView,
+  var Controller, NavigationController, SidebarView, StatusView,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   Controller = require('controllers/controller');
 
   SidebarView = require('views/sidebar_view');
+
+  StatusView = require('views/status_view');
 
   module.exports = NavigationController = (function(_super) {
 
@@ -577,8 +586,8 @@
 
     Router.prototype.registerRoutes = function() {
       this.match('', 'tweets#index');
-      this.match('logout', 'session#logout');
-      return this.match('@:user', 'user#show');
+      this.match('@:user', 'user#show');
+      return this.match('logout', 'navigation#logout');
     };
 
     Router.prototype.startHistory = function() {
@@ -728,25 +737,26 @@
 
     __extends(Twitter, _super);
 
-    function Twitter() {
-      this.loginStatusHandler = __bind(this.loginStatusHandler, this);
-      this.loginHandler = __bind(this.loginHandler, this);
-      this.sdkLoadHandler = __bind(this.sdkLoadHandler, this);
-      Twitter.__super__.constructor.apply(this, arguments);
-    }
-
     consumerKey = 'w0uohox9lTgpKETJmscYIQ';
 
     Twitter.prototype.name = 'twitter';
 
-    Twitter.prototype.api = {};
+    function Twitter() {
+      this.loginStatusHandler = __bind(this.loginStatusHandler, this);
+      this.loginHandler = __bind(this.loginHandler, this);
+      this.sdkLoadHandler = __bind(this.sdkLoadHandler, this);      Twitter.__super__.constructor.apply(this, arguments);
+      this.subscribeEvent('!logout', this.logout);
+    }
 
     Twitter.prototype.loadSDK = function() {
+      if (this.state() === 'resolved' || this.loading) return;
+      this.loading = true;
       return utils.loadLib("http://platform.twitter.com/anywhere.js?id=" + consumerKey + "&v=1", this.sdkLoadHandler, this.reject);
     };
 
     Twitter.prototype.sdkLoadHandler = function() {
       var _this = this;
+      this.loading = false;
       return twttr.anywhere(function(T) {
         mediator.publish('sdkLoaded');
         _this.T = T;
@@ -758,23 +768,53 @@
       return Boolean(window.twttr);
     };
 
+    Twitter.prototype.publish = function(event, callback) {
+      return this.T.trigger(event, callback);
+    };
+
+    Twitter.prototype.subscribe = function(event, callback) {
+      return this.T.bind(event, callback);
+    };
+
+    Twitter.prototype.unsubscribe = function(event) {
+      return this.T.unbind(event);
+    };
+
     Twitter.prototype.triggerLogin = function(loginContext) {
       var callback;
-      callback = _(this.loginHandler).bind(this, this.loginHandler);
-      return twttr.login(callback);
+      callback = _(this.loginHandler).bind(this, loginContext);
+      this.T.signIn();
+      this.subscribe('authComplete', function(event, currentUser, accessToken) {
+        return callback({
+          currentUser: currentUser,
+          accessToken: accessToken
+        });
+      });
+      return this.subscribe('signOut', function() {
+        console.log('SIGNOUT EVENT');
+        return callback();
+      });
+    };
+
+    Twitter.prototype.publishSession = function(response) {
+      var user;
+      user = response.currentUser;
+      mediator.publish('serviceProviderSession', {
+        provider: this,
+        userId: user.id,
+        accessToken: response.accessToken || twttr.anywhere.token
+      });
+      return mediator.publish('userData', user.attributes);
     };
 
     Twitter.prototype.loginHandler = function(loginContext, response) {
+      console.debug('Twitter#loginHandler', loginContext, response);
       if (response) {
         mediator.publish('loginSuccessful', {
           provider: this,
           loginContext: loginContext
         });
-        return mediator.publish('serviceProviderSession', {
-          provider: this,
-          userId: response.userId,
-          accessToken: response.accessToken
-        });
+        return this.publishSession(response);
       } else {
         return mediator.publish('loginFail', {
           provider: this,
@@ -786,29 +826,23 @@
     Twitter.prototype.getLoginStatus = function(callback, force) {
       if (callback == null) callback = this.loginStatusHandler;
       if (force == null) force = false;
+      console.debug('Twitter#getLoginStatus');
       return callback(this.T);
     };
 
     Twitter.prototype.loginStatusHandler = function(response) {
-      var attr, user, value;
-      if (!response.currentUser) return;
-      user = response.currentUser;
-      for (attr in user) {
-        value = user[attr];
-        if (typeof value === 'function') this.api[attr] = value;
+      console.debug('Twitter#loginStatusHandler', response);
+      if (response.currentUser) {
+        return this.publishSession(response);
+      } else {
+        return mediator.publish('logout');
       }
-      this.api.updateStatus = response.Status.update;
-      mediator.publish('serviceProviderSession', {
-        provider: this,
-        userId: user.id,
-        accessToken: twttr.anywhere.token
-      });
-      return mediator.publish('userData', user.attributes);
     };
 
     Twitter.prototype.logout = function() {
-      this.T.logout();
-      return this.T = null;
+      var _ref;
+      console.log('Twitter#logout');
+      return typeof twttr !== "undefined" && twttr !== null ? (_ref = twttr.anywhere) != null ? typeof _ref.signOut === "function" ? _ref.signOut() : void 0 : void 0 : void 0;
     };
 
     return Twitter;
@@ -1521,13 +1555,66 @@
   }
 }));
 (this.require.define({
-  "models/tweet": function(exports, require, module) {
+  "models/status": function(exports, require, module) {
     (function() {
-  var Model, Tweet, mediator,
+  var Model, Status, mediator,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
+
+  Model = require('models/model');
+
+  module.exports = Status = (function(_super) {
+
+    __extends(Status, _super);
+
+    function Status() {
+      Status.__super__.constructor.apply(this, arguments);
+    }
+
+    Status.prototype.minLength = 1;
+
+    Status.prototype.maxLength = 140;
+
+    Status.prototype.validate = function(attributes) {
+      var text;
+      text = attributes.text;
+      if ((!text) || (text.length < this.minLength) || (text.length > this.maxLength)) {
+        return 'Invalid text';
+      }
+    };
+
+    Status.prototype.calcCharCount = function(value) {
+      return this.maxLength - value;
+    };
+
+    Status.prototype.sync = function(method, model, options) {
+      var provider, timeout,
+        _this = this;
+      provider = mediator.user.get('provider');
+      timeout = setTimeout(options.error.bind(options, 'Timeout error'), 4000);
+      provider.T.Status.update(model.get('text'), function(tweet) {
+        window.clearTimeout(timeout);
+        mediator.publish('tweet:add', tweet.attributes);
+        return options.success(tweet.attributes);
+      });
+    };
+
+    return Status;
+
+  })(Model);
+
+}).call(this);
+
+  }
+}));
+(this.require.define({
+  "models/tweet": function(exports, require, module) {
+    (function() {
+  var Model, Tweet,
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   Model = require('models/model');
 
@@ -1566,6 +1653,7 @@
     __extends(Tweets, _super);
 
     function Tweets() {
+      this.addTweet = __bind(this.addTweet, this);
       this.processTweets = __bind(this.processTweets, this);
       Tweets.__super__.constructor.apply(this, arguments);
     }
@@ -1577,7 +1665,8 @@
       _(this).extend($.Deferred());
       this.getTweets();
       this.subscribeEvent('login', this.getTweets);
-      return this.subscribeEvent('logout', this.reset);
+      this.subscribeEvent('logout', this.reset);
+      return this.subscribeEvent('tweet:add', this.addTweet);
     };
 
     Tweets.prototype.getTweets = function() {
@@ -1588,16 +1677,25 @@
       provider = user.get('provider');
       if (provider.name !== 'twitter') return;
       this.trigger('loadStart');
-      return provider.api.homeTimeline(this.processTweets);
+      return provider.T.currentUser.homeTimeline(this.processTweets);
     };
 
     Tweets.prototype.processTweets = function(response) {
-      var tweets;
-      console.debug('Tweets#processTweets', response, response.array);
+      var tweets,
+        _this = this;
+      console.debug('Tweets#processTweets', response);
       this.trigger('load');
-      tweets = response && response.array ? response.array : [];
+      tweets = (response != null ? response.array : void 0) ? _(response.array).map(function(tweet) {
+        return tweet.attributes;
+      }) : [];
       this.reset(tweets);
       return this.resolve();
+    };
+
+    Tweets.prototype.addTweet = function(tweet) {
+      return this.add(tweet, {
+        at: 0
+      });
     };
 
     return Tweets;
@@ -2116,6 +2214,63 @@
   }
 }));
 (this.require.define({
+  "views/composite_view": function(exports, require, module) {
+    (function() {
+  var CompositeView, View,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  View = require('views/view');
+
+  module.exports = CompositeView = (function(_super) {
+
+    __extends(CompositeView, _super);
+
+    function CompositeView() {
+      this.dispose = __bind(this.dispose, this);
+      this.render = __bind(this.render, this);
+      CompositeView.__super__.constructor.apply(this, arguments);
+    }
+
+    CompositeView.prototype.initialize = function() {
+      CompositeView.__super__.initialize.apply(this, arguments);
+      return this.subViews = [];
+    };
+
+    CompositeView.prototype.attachView = function(view) {
+      return this.subViews.push(view);
+    };
+
+    CompositeView.prototype.renderSubViews = function() {
+      var _this = this;
+      return _(this.subViews).forEach(function(view) {
+        return _this.$(view.containerSelector).append(view.render().el);
+      });
+    };
+
+    CompositeView.prototype.render = function() {
+      CompositeView.__super__.render.apply(this, arguments);
+      return this.renderSubViews();
+    };
+
+    CompositeView.prototype.dispose = function() {
+      var _this = this;
+      CompositeView.__super__.dispose.apply(this, arguments);
+      return _(this.subViews).forEach(function(view) {
+        return view.dispose();
+      });
+    };
+
+    return CompositeView;
+
+  })(View);
+
+}).call(this);
+
+  }
+}));
+(this.require.define({
   "views/login_view": function(exports, require, module) {
     (function() {
   var LoginView, View, mediator, template, utils,
@@ -2171,6 +2326,7 @@
     };
 
     LoginView.prototype.loginWith = function(serviceProviderName, serviceProvider, e) {
+      console.debug('LoginView#loginWith', serviceProviderName, serviceProvider);
       e.preventDefault();
       if (!serviceProvider.isLoaded()) return;
       mediator.publish('login:pickService', serviceProviderName);
@@ -2196,9 +2352,11 @@
 (this.require.define({
   "views/navigation_view": function(exports, require, module) {
     (function() {
-  var NavigationView, View, template,
+  var NavigationView, View, mediator, template,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  mediator = require('mediator');
 
   View = require('views/view');
 
@@ -2237,14 +2395,16 @@
 (this.require.define({
   "views/sidebar_view": function(exports, require, module) {
     (function() {
-  var SidebarView, View, mediator, template,
+  var CompositeView, SidebarView, StatusView, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  View = require('views/view');
+  CompositeView = require('views/composite_view');
+
+  StatusView = require('views/status_view');
 
   template = require('./templates/sidebar');
 
@@ -2253,8 +2413,6 @@
     __extends(SidebarView, _super);
 
     function SidebarView() {
-      this.createTweet = __bind(this.createTweet, this);
-      this.updateCharacterCount = __bind(this.updateCharacterCount, this);
       this.loginStatusHandler = __bind(this.loginStatusHandler, this);
       SidebarView.__super__.constructor.apply(this, arguments);
     }
@@ -2268,14 +2426,10 @@
     SidebarView.prototype.autoRender = true;
 
     SidebarView.prototype.initialize = function() {
-      var _this = this;
       SidebarView.__super__.initialize.apply(this, arguments);
+      this.attachView(new StatusView());
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
-      this.subscribeEvent('userData', this.render);
-      _(['keyup', 'keydown']).each(function(eventName) {
-        return _this.delegate(eventName, '.composable-tweet-text', _this.updateCharacterCount);
-      });
-      return this.delegate('click', '.composable-tweet-send-button', this.createTweet);
+      return this.subscribeEvent('userData', this.render);
     };
 
     SidebarView.prototype.loginStatusHandler = function(loggedIn) {
@@ -2287,38 +2441,123 @@
       return this.render();
     };
 
-    SidebarView.prototype.updateCharacterCount = function(event) {
-      var $charCount, $send, charsLeft, count, max;
-      max = 140;
-      $charCount = this.$('.composable-tweet-character-count');
-      $send = this.$('.composable-tweet-send-button');
-      count = $(event.currentTarget).val().length;
-      charsLeft = max - count;
-      $charCount.text(charsLeft);
-      if (charsLeft < 0 || charsLeft === max) {
-        if (charsLeft !== max) {
-          $charCount.addClass('composable-tweet-character-count-invalid');
-        }
-        return $send.attr('disabled', 'disabled');
+    return SidebarView;
+
+  })(CompositeView);
+
+}).call(this);
+
+  }
+}));
+(this.require.define({
+  "views/stats_view": function(exports, require, module) {
+    (function() {
+
+
+
+}).call(this);
+
+  }
+}));
+(this.require.define({
+  "views/status_view": function(exports, require, module) {
+    (function() {
+  var Status, StatusView, View, mediator, template,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  mediator = require('mediator');
+
+  Status = require('models/status');
+
+  View = require('views/view');
+
+  template = require('./templates/status');
+
+  module.exports = StatusView = (function(_super) {
+
+    __extends(StatusView, _super);
+
+    function StatusView() {
+      this.render = __bind(this.render, this);
+      this.createStatus = __bind(this.createStatus, this);
+      this.updateStatusText = __bind(this.updateStatusText, this);
+      this.updateCharacterCount = __bind(this.updateCharacterCount, this);
+      this.loginStatusHandler = __bind(this.loginStatusHandler, this);
+      StatusView.__super__.constructor.apply(this, arguments);
+    }
+
+    StatusView.template = template;
+
+    StatusView.prototype.id = 'status';
+
+    StatusView.prototype.className = 'status';
+
+    StatusView.prototype.containerSelector = '#status-container';
+
+    StatusView.prototype.autoRender = false;
+
+    StatusView.prototype.initialize = function() {
+      StatusView.__super__.initialize.apply(this, arguments);
+      this.subscribeEvent('loginStatus', this.loginStatusHandler);
+      return this.subscribeEvent('userData', this.render);
+    };
+
+    StatusView.prototype.loginStatusHandler = function(loggedIn) {
+      if (loggedIn) {
+        this.model = new Status();
       } else {
-        $charCount.removeClass('composable-tweet-character-count-invalid');
-        return $send.removeAttr('disabled');
+        this.model = null;
+      }
+      return this.render();
+    };
+
+    StatusView.prototype.updateCharacterCount = function(valid, count) {
+      var $charCount, $createButton;
+      $charCount = this.$('.status-character-count');
+      $createButton = this.$('.status-create-button');
+      $charCount.text(count);
+      if (valid) {
+        $charCount.removeClass('status-character-count-invalid');
+        return $createButton.removeAttr('disabled');
+      } else {
+        $charCount.addClass('status-character-count-invalid');
+        return $createButton.attr('disabled', 'disabled');
       }
     };
 
-    SidebarView.prototype.createTweet = function(event) {
-      var $textEl, api, text,
-        _this = this;
-      $textEl = this.$('.composable-tweet-text');
-      api = mediator.user.get('provider').api;
-      text = $textEl.val();
-      return api.updateStatus(text, function(tweet) {
-        console.debug('New tweet:', tweet);
-        return $textEl.val('');
+    StatusView.prototype.updateStatusText = function(event) {
+      var text;
+      text = $(event.currentTarget).val();
+      return this.updateCharacterCount(this.model.set({
+        text: text
+      }), this.model.calcCharCount(text.length));
+    };
+
+    StatusView.prototype.createStatus = function(event) {
+      var _this = this;
+      return this.model.save({}, {
+        error: function(model, error) {
+          return console.log('Tweet error', error);
+        },
+        success: function(model, attributes) {
+          console.log('Tweet success', attributes);
+          return _this.$('.status-text').val('').trigger('keydown');
+        }
       });
     };
 
-    return SidebarView;
+    StatusView.prototype.render = function() {
+      var _this = this;
+      StatusView.__super__.render.apply(this, arguments);
+      _(['keyup', 'keydown']).each(function(eventName) {
+        return _this.delegate(eventName, '.status-text', _this.updateStatusText);
+      });
+      return this.delegate('click', '.status-create-button', this.createStatus);
+    };
+
+    return StatusView;
 
   })(View);
 
@@ -2333,7 +2572,7 @@
   var foundHelper, self=this;
 
 
-  return "<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
+  return "<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button twitter\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
   }
 }));
 (this.require.define({
@@ -2360,7 +2599,7 @@ function program1(depth0,data) {
 function program2(depth0,data) {
   
   var buffer = "", stack1;
-  buffer += "\n            <li class=\"nav-item\">\n              <a class=\"nav-item-link\" href=\"#/";
+  buffer += "\n            <li class=\"nav-item\">\n              <a class=\"nav-item-link\" href=\"#";
   stack1 = depth0.href;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this.href", { hash: {} }); }
@@ -2423,7 +2662,7 @@ function program1(depth0,data) {
   stack1 = foundHelper || depth0.followers_count;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> followers</li>\n  </ul>\n  <div class=\"composable-tweet\">\n    <textarea class=\"composable-tweet-text\" placeholder=\"What's happening?\"></textarea>\n    <div class=\"composable-tweet-info\">\n      <span class=\"composable-tweet-character-count\">140</span>\n      <button class=\"composable-tweet-send-button btn btn-primary\" disabled>Tweet</button>\n    </div>\n  </div>\n";
+  buffer += escapeExpression(stack1) + "</strong> followers</li>\n  </ul>\n  <div class=\"status-container\" id=\"status-container\"></div>\n";
   return buffer;}
 
 function program3(depth0,data) {
@@ -2445,6 +2684,40 @@ function program3(depth0,data) {
   }
 }));
 (this.require.define({
+  "views/templates/stats": function(exports, require, module) {
+    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", foundHelper, self=this;
+
+
+  return buffer;});
+  }
+}));
+(this.require.define({
+  "views/templates/status": function(exports, require, module) {
+    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
+
+function program1(depth0,data) {
+  
+  
+  return "\n  <textarea class=\"status-text\" placeholder=\"What's happening?\"></textarea>\n  <div class=\"status-info\">\n    <span class=\"status-character-count\">140</span>\n    <button class=\"status-create-button btn btn-primary\" disabled>Tweet</button>\n  </div>\n";}
+
+  foundHelper = helpers.if_logged_in;
+  stack1 = foundHelper || depth0.if_logged_in;
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n";
+  return buffer;});
+  }
+}));
+(this.require.define({
   "views/templates/tweet": function(exports, require, module) {
     module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
@@ -2454,15 +2727,15 @@ function program3(depth0,data) {
   buffer += "<div class=\"tweet-content\">\n  <header class=\"tweet-header\">\n    <a href=\"http://twitter.com/";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screenName);
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screenName", { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
   buffer += escapeExpression(stack1) + "\">\n      <img class=\"avatar\" src=\"";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profileImageUrl);
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profile_image_url);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profileImageUrl", { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profile_image_url", { hash: {} }); }
   buffer += escapeExpression(stack1) + "\" alt=\"Paul Miller\" />\n      <strong class=\"tweet-author-full-name\">\n        ";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
@@ -2472,9 +2745,9 @@ function program3(depth0,data) {
   buffer += escapeExpression(stack1) + "\n      </strong>\n      <span class=\"username tweet-author-username\">\n        @";
   foundHelper = helpers.user;
   stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screenName);
+  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screenName", { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
   buffer += escapeExpression(stack1) + "\n      </span>\n    </a>\n  </header>\n  <p class=\"tweet-text\">";
   foundHelper = helpers.text;
   stack1 = foundHelper || depth0.text;
@@ -2491,7 +2764,7 @@ function program3(depth0,data) {
   var foundHelper, self=this;
 
 
-  return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n</header>\n<div class=\"tweets\"></div>\n\n<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" />\n</div>\n";});
+  return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n</header>\n<div class=\"tweets\"></div>\n";});
   }
 }));
 (this.require.define({
@@ -2559,16 +2832,8 @@ function program3(depth0,data) {
     TweetsView.prototype.fallbackSelector = '.fallback';
 
     TweetsView.prototype.initialize = function() {
-      var _this = this;
       TweetsView.__super__.initialize.apply(this, arguments);
-      this.subscribeEvent('loginStatus', this.showHideLoginNote);
-      return mediator.subscribe('sdkLoaded', function() {
-        return twttr.anywhere(function(T) {
-          return _this.delegate('click', '.sign-in-button', function() {
-            return T.signIn();
-          });
-        });
-      });
+      return this.subscribeEvent('loginStatus', this.showHideLoginNote);
     };
 
     TweetsView.prototype.getView = function(item) {
@@ -2578,7 +2843,6 @@ function program3(depth0,data) {
     };
 
     TweetsView.prototype.showHideLoginNote = function() {
-      this.$('.login-note').css('display', mediator.user ? 'none' : 'block');
       return this.$('.tweets, .tweets-header').css('display', mediator.user ? 'block' : 'none');
     };
 
