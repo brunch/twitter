@@ -54,3 +54,11 @@ Handlebars.registerHelper 'with_user', (options) ->
 
 Handlebars.registerHelper 'auto_link', (options) ->
   new Handlebars.SafeString twttr.txt.autoLink options.fn this
+
+Handlebars.registerHelper 'format_date', (options) ->
+  date = new Date options.fn this
+  new Handlebars.SafeString moment(date).fromNow()
+
+Handlebars.registerHelper 'unless_source_is_web', (source, options) ->
+  string = if source is 'web' then '' else options.fn this
+  new Handlebars.SafeString string
