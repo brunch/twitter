@@ -2,6 +2,8 @@
 Tweet your brunch is an example app built with [Brunch](http://brunch.io) &
 [Brunch with Chaplin](https://github.com/paulmillr/brunch-with-chaplin).
 
+![](http://brunch.io/images/screenshots/twitter.png)
+
 ## Getting started
 Clone the repo and run `npm install` & `brunch build`.
 See more info on the [official site](http://brunch.io).
