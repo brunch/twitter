@@ -1,4 +1,4 @@
-Model = require 'models/model'
+Model = require './model'
 
 module.exports = class Navigation extends Model
   defaults:

@@ -1,11 +1,11 @@
 mediator = require 'mediator'
-View = require 'views/view'
+View = require './view'
 template = require './templates/navigation'
 
 module.exports = class NavigationView extends View
   # This is a workaround.
   # In the end you might want to used precompiled templates.
-  @template: template
+  template: template
 
   id: 'navigation'
   containerSelector: '#navigation-container'

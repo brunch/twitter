@@ -1,34 +1,41 @@
 mediator = require 'mediator'
+Application = require 'chaplin/application'
 SessionController = require 'controllers/session_controller'
-ApplicationController = require 'controllers/application_controller'
-Router = require 'lib/router'
+NavigationController = require 'controllers/navigation_controller'
+SidebarController = require 'controllers/sidebar_controller'
+routes = require 'routes'
+support = require 'chaplin/lib/support'
 
 # The application bootstrapper.
-# In practise you might choose a more meaningful name.
-Application =
+module.exports = class TwitterApplication extends Application
+  title: 'Tweet your brunch'
+
   initialize: ->
-    @initControllers()
-    @initRouter()
-    return
+    #console.debug 'ExampleApplication#initialize'
 
-  # Instantiate meta-controllers
-  initControllers: ->
-    # At the moment, do not save the references.
-    # They might be safed as instance properties or directly on the mediator.
-    # Normally, controllers can communicate with each other via Pub/Sub.
+    super # This creates the AppController and AppView
+
+    # Instantiate common controllers
+    # ------------------------------
+
     new SessionController()
-    new ApplicationController()
+    new NavigationController()
+    new SidebarController()
 
-  # Instantiate the router
-  initRouter: ->
-    # We have to make the router public because
-    # the AppView needs to access it synchronously.
-    mediator.router = new Router()
+    # Initialize the router
+    # ---------------------
 
-    # Make router property readonly
-    Object.defineProperty? mediator, 'router', writable: false
+    # This creates the mediator.router property and
+    # starts the Backbone history.
+    @initRouter routes
 
-# Freeze the object
-Object.freeze? Application
+    # Object sealing
+    # --------------
 
-module.exports = Application
+    # Seal the mediator object (prevent extensions and
+    # make all properties non-configurable)
+    if support.propertyDescriptors and Object.seal
+      Object.seal mediator
+
+    # Freeze the application instance to prevent further changes
+    Object.freeze? this

@@ -1,10 +1,10 @@
-Model = require 'models/model'
 mediator = require 'mediator'
+Model = require './model'
 
 module.exports = class User extends Model
   initialize: ->
     super
-    mediator.bind 'userMethods', @initializeMethods
+    mediator.on 'userMethods', @initializeMethods
 
   # twttr.anywhere has many useful methods like isFollowedBy()
   # so it's great to have them in the model.

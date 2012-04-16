@@ -1,5 +1,5 @@
 mediator = require 'mediator'
-Model = require 'models/model'
+Model = require './model'
 
 module.exports = class Status extends Model
   minLength: 1

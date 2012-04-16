@@ -1,12 +1,12 @@
 mediator = require 'mediator'
 utils = require 'lib/utils'
-View = require 'views/view'
+View = require './view'
 template = require './templates/login'
 
 module.exports = class LoginView extends View
   # This is a workaround.
   # In the end you might want to used precompiled templates.
-  @template = template
+  template: template
 
   id: 'login'
   containerSelector: '#content-container'

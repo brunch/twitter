@@ -1,4 +1,4 @@
-Controller = require 'controllers/controller'
+Controller = require './controller'
 mediator = require 'mediator'
 Navigation = require 'models/navigation'
 NavigationView = require 'views/navigation_view'

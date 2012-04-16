@@ -1,10 +1,10 @@
 mediator = require 'mediator'
 Status = require 'models/status'
-View = require 'views/view'
+View = require './view'
 template = require './templates/status'
 
 module.exports = class StatusView extends View
-  @template: template
+  template: template
   id: 'status'
   className: 'status'
   containerSelector: '#status-container'

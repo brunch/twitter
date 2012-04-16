@@ -1,4 +1,4 @@
-Controller = require 'controllers/controller'
+Controller = require './controller'
 Tweets = require 'models/tweets'
 TweetsView = require 'views/tweets_view'
 

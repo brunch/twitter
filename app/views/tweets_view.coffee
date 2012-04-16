@@ -1,9 +1,10 @@
 mediator = require 'mediator'
-CollectionView = require 'views/collection_view'
-TweetView = require 'views/tweet_view'
+CollectionView = require 'chaplin/views/collection_view'
+TweetView = require './tweet_view'
+template = require './templates/tweets'
 
 module.exports = class TweetsView extends CollectionView
-  @template = require './templates/tweets'
+  template: template
 
   tagName: 'div' # This is not directly a list but contains a list
   id: 'tweets'
@@ -27,5 +28,10 @@ module.exports = class TweetsView extends CollectionView
     @$('.tweets, .tweets-header').css 'display', if mediator.user then 'block' else 'none'
 
   render: ->
+    console.log 'TweetsView#render', this, @$el
     super
     @showHideLoginNote()
+
+  afterRender: ->
+    super
+    console.log 'TweetsView#afterRender', @containerSelector, $(@containerSelector)

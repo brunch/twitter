@@ -1,7 +1,6 @@
 template = require './templates/tweet'
-View = require 'views/view'
+View = require './view'
 
 module.exports = class TweetView extends View
-  @template = template
-
+  template: template
   className: 'tweet'

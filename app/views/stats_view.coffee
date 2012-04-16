@@ -1,9 +1,9 @@
 mediator = require 'mediator'
-View = require 'views/view'
+View = require './view'
 template = require './templates/stats'
 
 module.exports = class StatsView extends View
-  @template: template
+  template: template
   className: 'stats'
   tagName: 'ul'
   containerSelector: '#stats-container'

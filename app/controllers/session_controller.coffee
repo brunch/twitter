@@ -1,7 +1,7 @@
 mediator = require 'mediator'
 utils = require 'lib/utils'
 User = require 'models/user'
-Controller = require 'controllers/controller'
+Controller = require './controller'
 Twitter = require 'lib/services/twitter'
 LoginView = require 'views/login_view'
 
@@ -53,7 +53,7 @@ module.exports = class SessionController extends Controller
   createUser: (userData) ->
     #console.debug 'SessinController#createUser', userData
     user = new User userData
-    mediator.user = user
+    mediator.setUser user
 
   # Try to get an existing session from one of the login providers
   getSession: ->

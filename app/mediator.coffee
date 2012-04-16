@@ -1,36 +1,27 @@
-# The mediator is the objects all others modules use to
-# communicate with each other.
-# It implements the Publish/Subscribe pattern.
+createMediator = require 'chaplin/lib/create_mediator'
 
-mediator = {}
+# Mediator singleton
+# ------------------
 
-# Current user
-mediator.user = null
+# The mediator is a simple object all others modules use to
+# communicate with each other. It implements the Publish/Subscribe pattern.
+#
+# Additionally, it holds two common objects which need to be shared
+# between modules: the user and the router.
+#
+# This module returns the mediator singleton object. This is the
+# application-wide mediator you might load into modules
+# which need to talk to other modules using Publish/Subscribe.
+#
+# The actual creation of the mediator takes place in another
+# module, see chaplin/lib/create_mediator.coffee.
 
-# The router
-mediator.router = null
+# Create the mediator using Chaplin’s constructor,
+# add properties/methods for getting/setting the user and the router
+module.exports = mediator = createMediator
+  createRouterProperty: true
+  createUserProperty: true
 
-# Include Backbone event methods for
-# global Publish/Subscribe
-_(mediator).defaults Backbone.Events
+# You might add properties to the mediator here
 
-# Initialize an empty callback list (so we might seal the object)
-mediator._callbacks  = null
-
-# Create Publish/Subscribe aliases
-mediator.subscribe   = mediator.on      = Backbone.Events.on
-mediator.unsubscribe = mediator.off     = Backbone.Events.off
-mediator.publish     = mediator.trigger = Backbone.Events.trigger
-
-# Make subscribe, unsubscribe and publish properties readonly
-if Object.defineProperties
-  desc = writable: false
-  Object.defineProperties mediator,
-    subscribe: desc, unsubscribe: desc, publish: desc
-
-# Seal the mediator object
-# (extensible: false for the mediator, configurable: false for its properties)
-Object.seal? mediator
-
-# Return mediator
-module.exports = mediator
+#mediator.foo = ->

@@ -5,10 +5,7 @@ StatusView = require './status_view'
 template = require './templates/sidebar'
 
 module.exports = class SidebarView extends CompositeView
-
-  # This is a workaround.
-  # In the end you might want to used precompiled templates.
-  @template = template
+  template: template
 
   id: 'sidebar'
   containerSelector: '#sidebar-container'

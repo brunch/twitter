@@ -1,5 +1,5 @@
 utils = require 'lib/utils'
-Subscriber = require 'lib/subscriber'
+Subscriber = require 'chaplin/lib/subscriber'
 
 module.exports = class ServiceProvider
   # Mixin a Subscriber
@@ -17,6 +17,24 @@ module.exports = class ServiceProvider
       deferred: this
       methods: ['triggerLogin', 'getLoginStatus']
       onDeferral: @loadSDK
+
+  # Disposal
+  # --------
+
+  disposed: false
+
+  dispose: ->
+    return if @disposed
+
+    # Unbind handlers of global events
+    @unsubscribeAllEvents()
+
+    # Finished
+    #console.debug 'ServiceProvider#dispose', this, 'finished'
+    @disposed = true
+
+    # You're frozen when your heart’s not open
+    Object.freeze? this
 
 ###
 
