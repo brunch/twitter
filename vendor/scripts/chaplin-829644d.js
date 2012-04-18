@@ -526,7 +526,7 @@
     _(Router.prototype).extend(Subscriber);
 
     function Router(options) {
-      this.options = options;
+      this.options = options != null ? options : {};
       this.route = __bind(this.route, this);
       this.match = __bind(this.match, this);
       this.subscribeEvent('!router:route', this.routeHandler);
