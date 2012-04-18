@@ -114,7 +114,9 @@
       new SessionController();
       new NavigationController();
       new SidebarController();
-      this.initRouter(routes);
+      this.initRouter(routes, {
+        pushState: false
+      });
       if (support.propertyDescriptors && Object.seal) Object.seal(mediator);
       return typeof Object.freeze === "function" ? Object.freeze(this) : void 0;
     };
