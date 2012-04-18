@@ -27,7 +27,7 @@ module.exports = class TwitterApplication extends Application
 
     # This creates the mediator.router property and
     # starts the Backbone history.
-    @initRouter routes
+    @initRouter routes, pushState: no
 
     # Object sealing
     # --------------

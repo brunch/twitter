@@ -12259,8 +12259,8 @@ Handlebars.template = Handlebars.VM.template;
       });
     };
 
-    Application.prototype.initRouter = function(routes) {
-      this.router = new Router();
+    Application.prototype.initRouter = function(routes, options) {
+      this.router = new Router(options);
       if (typeof routes === "function") routes(this.router.match);
       return this.router.startHistory();
     };
@@ -12672,9 +12672,11 @@ Handlebars.template = Handlebars.VM.template;
 
     _(Router.prototype).extend(Subscriber);
 
-    function Router() {
+    function Router(options) {
+      this.options = options;
       this.route = __bind(this.route, this);
-      this.match = __bind(this.match, this);      this.subscribeEvent('!router:route', this.routeHandler);
+      this.match = __bind(this.match, this);
+      this.subscribeEvent('!router:route', this.routeHandler);
       this.subscribeEvent('!router:changeURL', this.changeURLHandler);
       this.createHistory();
     }
@@ -12684,8 +12686,10 @@ Handlebars.template = Handlebars.VM.template;
     };
 
     Router.prototype.startHistory = function() {
+      var pushState, _ref;
+      pushState = (_ref = this.options.pushState) != null ? _ref : true;
       return Backbone.history.start({
-        pushState: true
+        pushState: pushState
       });
     };
 
