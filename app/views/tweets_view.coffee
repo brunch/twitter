@@ -1,7 +1,7 @@
 mediator = require 'mediator'
 CollectionView = require 'chaplin/views/collection_view'
-TweetView = require './tweet_view'
-template = require './templates/tweets'
+TweetView = require 'views/tweet_view'
+template = require 'views/templates/tweets'
 
 module.exports = class TweetsView extends CollectionView
   template: template
@@ -28,10 +28,5 @@ module.exports = class TweetsView extends CollectionView
     @$('.tweets, .tweets-header').css 'display', if mediator.user then 'block' else 'none'
 
   render: ->
-    console.log 'TweetsView#render', this, @$el
     super
     @showHideLoginNote()
-
-  afterRender: ->
-    super
-    console.log 'TweetsView#afterRender', @containerSelector, $(@containerSelector)
