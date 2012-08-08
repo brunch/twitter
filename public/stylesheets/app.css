@@ -4000,14 +4000,13 @@ body {
 .module {
   margin-bottom: 10px;
   line-height: 16px;
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 1px solid rgba(0,0,0,0.1);
   -webkit-border-radius: 6px;
-  -moz-border-radius: 6px;
   border-radius: 6px;
   border-top-left-radius: 13;
   background-color: #fff;
-  -webkit-background-clip: padding ;
-  -moz-background-clip: padding ;
+  -webkit-background-clip: padding;
+  -moz-background-clip: padding;
   background-clip: padding-box;
 }
 .avatar {
@@ -4017,7 +4016,6 @@ body {
   width: 48px;
   height: 48px;
   -webkit-border-radius: 5px;
-  -moz-border-radius: 5px;
   border-radius: 5px;
 }
 .size32 {
@@ -4031,7 +4029,7 @@ body {
 }
 .outer-container {
   padding: 15px;
-  background: rgba(255,255,255,0.20);
+  background: rgba(255,255,255,0.2);
 }
 .main-content {
   margin-left: 15px;
@@ -4139,7 +4137,6 @@ h1 {
 .status {
   padding: 12px;
   -webkit-border-radius: 6px;
-  -moz-border-radius: 6px;
   border-radius: 6px;
   background: #f8f8f8;
 }

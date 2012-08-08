@@ -1,93 +1,89 @@
 (function(/*! Brunch !*/) {
   'use strict';
 
-  if (!this.require) {
-    var modules = {};
-    var cache = {};
-    var __hasProp = ({}).hasOwnProperty;
+  var globals = typeof window !== 'undefined' ? window : global;
+  if (typeof globals.require === 'function') return;
 
-    var expand = function(root, name) {
-      var results = [], parts, part;
-      if (/^\.\.?(\/|$)/.test(name)) {
-        parts = [root, name].join('/').split('/');
-      } else {
-        parts = name.split('/');
+  var modules = {};
+  var cache = {};
+
+  var has = function(object, name) {
+    return ({}).hasOwnProperty.call(object, name);
+  };
+
+  var expand = function(root, name) {
+    var results = [], parts, part;
+    if (/^\.\.?(\/|$)/.test(name)) {
+      parts = [root, name].join('/').split('/');
+    } else {
+      parts = name.split('/');
+    }
+    for (var i = 0, length = parts.length; i < length; i++) {
+      part = parts[i];
+      if (part === '..') {
+        results.pop();
+      } else if (part !== '.' && part !== '') {
+        results.push(part);
       }
-      for (var i = 0, length = parts.length; i < length; i++) {
-        part = parts[i];
-        if (part == '..') {
-          results.pop();
-        } else if (part != '.' && part != '') {
-          results.push(part);
-        }
+    }
+    return results.join('/');
+  };
+
+  var dirname = function(path) {
+    return path.split('/').slice(0, -1).join('/');
+  };
+
+  var localRequire = function(path) {
+    return function(name) {
+      var dir = dirname(path);
+      var absolute = expand(dir, name);
+      return globals.require(absolute);
+    };
+  };
+
+  var initModule = function(name, definition) {
+    var module = {id: name, exports: {}};
+    definition(module.exports, localRequire(name), module);
+    var exports = cache[name] = module.exports;
+    return exports;
+  };
+
+  var require = function(name) {
+    var path = expand(name, '.');
+
+    if (has(cache, path)) return cache[path];
+    if (has(modules, path)) return initModule(path, modules[path]);
+
+    var dirIndex = expand(path, './index');
+    if (has(cache, dirIndex)) return cache[dirIndex];
+    if (has(modules, dirIndex)) return initModule(dirIndex, modules[dirIndex]);
+
+    throw new Error('Cannot find module "' + name + '"');
+  };
+
+  var define = function(bundle) {
+    for (var key in bundle) {
+      if (has(bundle, key)) {
+        modules[key] = bundle[key];
       }
-      return results.join('/');
-    };
-
-    var getFullPath = function(path, fromCache) {
-      var store = fromCache ? cache : modules;
-      var dirIndex;
-      if (__hasProp.call(store, path)) return path;
-      dirIndex = expand(path, './index');
-      if (__hasProp.call(store, dirIndex)) return dirIndex;
-    };
-    
-    var cacheModule = function(name, path, contentFn) {
-      var module = {id: path, exports: {}};
-      try {
-        cache[path] = module.exports;
-        contentFn(module.exports, function(name) {
-          return require(name, dirname(path));
-        }, module);
-        cache[path] = module.exports;
-      } catch (err) {
-        delete cache[path];
-        throw err;
-      }
-      return cache[path];
-    };
-
-    var require = function(name, root) {
-      var path = expand(root, name);
-      var fullPath;
-
-      if (fullPath = getFullPath(path, true)) {
-        return cache[fullPath];
-      } else if (fullPath = getFullPath(path, false)) {
-        return cacheModule(name, fullPath, modules[fullPath]);
-      } else {
-        throw new Error("Cannot find module '" + name + "'");
-      }
-    };
-
-    var dirname = function(path) {
-      return path.split('/').slice(0, -1).join('/');
-    };
-
-    this.require = function(name) {
-      return require(name, '');
-    };
-
-    this.require.brunch = true;
-    this.require.define = function(bundle) {
-      for (var key in bundle) {
-        if (__hasProp.call(bundle, key)) {
-          modules[key] = bundle[key];
-        }
-      }
-    };
+    }
   }
-}).call(this);
-(this.require.define({
-  "application": function(exports, require, module) {
-    (function() {
-  var Application, NavigationController, SessionController, SidebarController, TwitterApplication, mediator, routes, support,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+  globals.require = require;
+  globals.require.define = define;
+  globals.require.brunch = true;
+})();
+
+window.require.define({"application": function(exports, require, module) {
+  var Application, Chaplin, Layout, NavigationController, SessionController, SidebarController, mediator, routes,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  Chaplin = require('chaplin');
 
   mediator = require('mediator');
 
-  Application = require('chaplin/application');
+  routes = require('routes');
 
   SessionController = require('controllers/session_controller');
 
@@ -95,73 +91,78 @@
 
   SidebarController = require('controllers/sidebar_controller');
 
-  routes = require('routes');
+  Layout = require('views/layout');
 
-  support = require('chaplin/lib/support');
+  module.exports = Application = (function(_super) {
 
-  module.exports = TwitterApplication = (function(_super) {
+    __extends(Application, _super);
 
-    __extends(TwitterApplication, _super);
-
-    function TwitterApplication() {
-      TwitterApplication.__super__.constructor.apply(this, arguments);
+    function Application() {
+      return Application.__super__.constructor.apply(this, arguments);
     }
 
-    TwitterApplication.prototype.title = 'Tweet your brunch';
+    Application.prototype.title = 'Tweet your brunch';
 
-    TwitterApplication.prototype.initialize = function() {
-      TwitterApplication.__super__.initialize.apply(this, arguments);
-      new SessionController();
-      new NavigationController();
-      new SidebarController();
-      this.initRouter(routes, {
-        pushState: false
-      });
-      if (support.propertyDescriptors && Object.seal) Object.seal(mediator);
+    Application.prototype.initialize = function() {
+      Application.__super__.initialize.apply(this, arguments);
+      this.initDispatcher();
+      this.initLayout();
+      this.initMediator();
+      this.initControllers();
+      this.initRouter(routes);
       return typeof Object.freeze === "function" ? Object.freeze(this) : void 0;
     };
 
-    return TwitterApplication;
+    Application.prototype.initLayout = function() {
+      return this.layout = new Layout({
+        title: this.title
+      });
+    };
 
-  })(Application);
+    Application.prototype.initControllers = function() {
+      new SessionController();
+      new NavigationController();
+      return new SidebarController();
+    };
 
-}).call(this);
+    Application.prototype.initMediator = function() {
+      Chaplin.mediator.user = null;
+      return Chaplin.mediator.seal();
+    };
 
-  }
-}));
-(this.require.define({
-  "controllers/controller": function(exports, require, module) {
-    (function() {
-  var ChaplinController, Controller,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    return Application;
 
-  ChaplinController = require('chaplin/controllers/controller');
+  })(Chaplin.Application);
+  
+}});
+
+window.require.define({"controllers/base/controller": function(exports, require, module) {
+  var Chaplin, Controller,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  Chaplin = require('chaplin');
 
   module.exports = Controller = (function(_super) {
 
     __extends(Controller, _super);
 
     function Controller() {
-      Controller.__super__.constructor.apply(this, arguments);
+      return Controller.__super__.constructor.apply(this, arguments);
     }
 
     return Controller;
 
-  })(ChaplinController);
+  })(Chaplin.Controller);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "controllers/navigation_controller": function(exports, require, module) {
-    (function() {
+window.require.define({"controllers/navigation_controller": function(exports, require, module) {
   var Controller, Navigation, NavigationController, NavigationView, mediator,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Controller = require('./controller');
+  Controller = require('controllers/base/controller');
 
   mediator = require('mediator');
 
@@ -174,7 +175,7 @@
     __extends(NavigationController, _super);
 
     function NavigationController() {
-      NavigationController.__super__.constructor.apply(this, arguments);
+      return NavigationController.__super__.constructor.apply(this, arguments);
     }
 
     NavigationController.prototype.historyURL = 'logout';
@@ -195,30 +196,24 @@
     return NavigationController;
 
   })(Controller);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "controllers/session_controller": function(exports, require, module) {
-    (function() {
-  var Controller, LoginView, SessionController, Twitter, User, mediator, utils,
+window.require.define({"controllers/session_controller": function(exports, require, module) {
+  var Controller, LoginView, SessionController, Twitter, User, mediator,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  utils = require('lib/utils');
+  Controller = require('controllers/base/controller');
 
   User = require('models/user');
 
-  Controller = require('./controller');
+  LoginView = require('views/login_view');
 
   Twitter = require('lib/services/twitter');
-
-  LoginView = require('views/login_view');
 
   module.exports = SessionController = (function(_super) {
 
@@ -226,10 +221,11 @@
 
     function SessionController() {
       this.logout = __bind(this.logout, this);
+
       this.serviceProviderSession = __bind(this.serviceProviderSession, this);
-      this.loginAttempt = __bind(this.loginAttempt, this);
+
       this.triggerLogin = __bind(this.triggerLogin, this);
-      SessionController.__super__.constructor.apply(this, arguments);
+      return SessionController.__super__.constructor.apply(this, arguments);
     }
 
     SessionController.serviceProviders = {
@@ -243,7 +239,6 @@
     SessionController.prototype.serviceProviderName = null;
 
     SessionController.prototype.initialize = function() {
-      this.subscribeEvent('loginAttempt', this.loginAttempt);
       this.subscribeEvent('serviceProviderSession', this.serviceProviderSession);
       this.subscribeEvent('logout', this.logout);
       this.subscribeEvent('userData', this.userData);
@@ -253,26 +248,24 @@
       return this.getSession();
     };
 
-    SessionController.prototype.loadSDKs = function() {
+    SessionController.prototype.loadServiceProviders = function() {
       var name, serviceProvider, _ref, _results;
       _ref = SessionController.serviceProviders;
       _results = [];
       for (name in _ref) {
         serviceProvider = _ref[name];
-        _results.push(serviceProvider.loadSDK());
+        _results.push(serviceProvider.load());
       }
       return _results;
     };
 
     SessionController.prototype.createUser = function(userData) {
-      var user;
-      user = new User(userData);
-      return mediator.setUser(user);
+      return mediator.user = new User(userData);
     };
 
     SessionController.prototype.getSession = function() {
       var name, serviceProvider, _ref, _results;
-      this.loadSDKs();
+      this.loadServiceProviders();
       _ref = SessionController.serviceProviders;
       _results = [];
       for (name in _ref) {
@@ -283,18 +276,13 @@
     };
 
     SessionController.prototype.showLoginView = function() {
-      console.debug('SessionController#showLoginView');
-      if (this.loginView) return;
-      this.loadSDKs();
+      if (this.loginView) {
+        return;
+      }
+      this.loadServiceProviders();
       return this.loginView = new LoginView({
         serviceProviders: SessionController.serviceProviders
       });
-    };
-
-    SessionController.prototype.hideLoginView = function() {
-      if (!this.loginView) return;
-      this.loginView.dispose();
-      return this.loginView = null;
     };
 
     SessionController.prototype.triggerLogin = function(serviceProviderName) {
@@ -308,12 +296,9 @@
       return serviceProvider.triggerLogin();
     };
 
-    SessionController.prototype.loginAttempt = function() {};
-
     SessionController.prototype.serviceProviderSession = function(session) {
       this.serviceProviderName = session.provider.name;
-      console.debug('SessionController#serviceProviderSession', session, this.serviceProviderName);
-      this.hideLoginView();
+      this.disposeLoginView();
       session.id = session.userId;
       delete session.userId;
       this.createUser(session);
@@ -332,10 +317,7 @@
 
     SessionController.prototype.logout = function() {
       this.loginStatusDetermined = true;
-      if (mediator.user) {
-        mediator.user.dispose();
-        mediator.user = null;
-      }
+      this.disposeUser();
       this.serviceProviderName = null;
       this.showLoginView();
       return mediator.publish('loginStatus', false);
@@ -345,22 +327,34 @@
       return mediator.user.set(data);
     };
 
+    SessionController.prototype.disposeLoginView = function() {
+      if (!this.loginView) {
+        return;
+      }
+      this.loginView.dispose();
+      return this.loginView = null;
+    };
+
+    SessionController.prototype.disposeUser = function() {
+      if (!mediator.user) {
+        return;
+      }
+      mediator.user.dispose();
+      return mediator.user = null;
+    };
+
     return SessionController;
 
   })(Controller);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "controllers/sidebar_controller": function(exports, require, module) {
-    (function() {
+window.require.define({"controllers/sidebar_controller": function(exports, require, module) {
   var Controller, SidebarController, SidebarView, StatusView,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Controller = require('./controller');
+  Controller = require('controllers/base/controller');
 
   SidebarView = require('views/sidebar_view');
 
@@ -371,7 +365,7 @@
     __extends(SidebarController, _super);
 
     function SidebarController() {
-      SidebarController.__super__.constructor.apply(this, arguments);
+      return SidebarController.__super__.constructor.apply(this, arguments);
     }
 
     SidebarController.prototype.initialize = function() {
@@ -381,19 +375,15 @@
     return SidebarController;
 
   })(Controller);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "controllers/tweets_controller": function(exports, require, module) {
-    (function() {
+window.require.define({"controllers/tweets_controller": function(exports, require, module) {
   var Controller, Tweets, TweetsController, TweetsView,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Controller = require('./controller');
+  Controller = require('controllers/base/controller');
 
   Tweets = require('models/tweets');
 
@@ -404,7 +394,7 @@
     __extends(TweetsController, _super);
 
     function TweetsController() {
-      TweetsController.__super__.constructor.apply(this, arguments);
+      return TweetsController.__super__.constructor.apply(this, arguments);
     }
 
     TweetsController.prototype.historyURL = '';
@@ -419,14 +409,10 @@
     return TweetsController;
 
   })(Controller);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "initialize": function(exports, require, module) {
-    (function() {
+window.require.define({"initialize": function(exports, require, module) {
   var Application;
 
   Application = require('./application');
@@ -436,23 +422,19 @@
     app = new Application();
     return app.initialize();
   });
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "lib/services/service_provider": function(exports, require, module) {
-    (function() {
-  var ServiceProvider, Subscriber, utils;
+window.require.define({"lib/services/service_provider": function(exports, require, module) {
+  var Chaplin, ServiceProvider, utils;
 
   utils = require('lib/utils');
 
-  Subscriber = require('chaplin/lib/subscriber');
+  Chaplin = require('chaplin');
 
   module.exports = ServiceProvider = (function() {
 
-    _(ServiceProvider.prototype).defaults(Subscriber);
+    _(ServiceProvider.prototype).extend(Chaplin.Subscriber);
 
     ServiceProvider.prototype.loading = false;
 
@@ -461,14 +443,16 @@
       utils.deferMethods({
         deferred: this,
         methods: ['triggerLogin', 'getLoginStatus'],
-        onDeferral: this.loadSDK
+        onDeferral: this.load
       });
     }
 
     ServiceProvider.prototype.disposed = false;
 
     ServiceProvider.prototype.dispose = function() {
-      if (this.disposed) return;
+      if (this.disposed) {
+        return;
+      }
       this.unsubscribeAllEvents();
       this.disposed = true;
       return typeof Object.freeze === "function" ? Object.freeze(this) : void 0;
@@ -479,48 +463,48 @@
   })();
 
   /*
-  
+
     Standard methods and their signatures:
-  
-    loadSDK: ->
+
+    load: ->
       # Load a script like this:
-      utils.loadLib 'http://example.org/foo.js', @sdkLoadHandler, @reject
-  
-    sdkLoadHandler: =>
-      # Init the SDK, then resolve
-      someSDK.init(foo: 'bar')
+      utils.loadLib 'http://example.org/foo.js', @loadHandler, @reject
+
+    loadHandler: =>
+      # Init the library, then resolve
+      ServiceProviderLibrary.init(foo: 'bar')
       @resolve()
-  
+
     isLoaded: ->
       # Return a Boolean
-      Boolean window.someSDK and someSDK.login
-  
+      Boolean window.ServiceProviderLibrary and ServiceProviderLibrary.login
+
     # Trigger login popup
     triggerLogin: (loginContext) ->
-      callback = _(@loginHandler).bind(this, @loginHandler)
-      someSDK.login callback
-  
+      callback = _(@loginHandler).bind(this, loginContext)
+      ServiceProviderLibrary.login callback
+
     # Callback for the login popup
     loginHandler: (loginContext, response) =>
-  
+
+      eventPayload = {provider: this, loginContext}
       if response
         # Publish successful login
-        mediator.publish 'loginSuccessful',
-          provider: this, loginContext: loginContext
-  
+        mediator.publish 'loginSuccessful', eventPayload
+
         # Publish the session
         mediator.publish 'serviceProviderSession',
           provider: this
           userId: response.userId
           accessToken: response.accessToken
           # etc.
-  
+
       else
-        mediator.publish 'loginFail', provider: this, loginContext: loginContext
-  
+        mediator.publish 'loginFail', eventPayload
+
     getLoginStatus: (callback = @loginStatusHandler, force = false) ->
-      someSDK.getLoginStatus callback, force
-  
+      ServiceProviderLibrary.getLoginStatus callback, force
+
     loginStatusHandler: (response) =>
       return unless response
       mediator.publish 'serviceProviderSession',
@@ -530,17 +514,14 @@
         # etc.
   */
 
-}).call(this);
+  
+}});
 
-  }
-}));
-(this.require.define({
-  "lib/services/twitter": function(exports, require, module) {
-    (function() {
+window.require.define({"lib/services/twitter": function(exports, require, module) {
   var ServiceProvider, Twitter, mediator, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
@@ -559,13 +540,18 @@
 
     function Twitter() {
       this.loginStatusHandler = __bind(this.loginStatusHandler, this);
+
       this.loginHandler = __bind(this.loginHandler, this);
-      this.sdkLoadHandler = __bind(this.sdkLoadHandler, this);      Twitter.__super__.constructor.apply(this, arguments);
+
+      this.sdkLoadHandler = __bind(this.sdkLoadHandler, this);
+      Twitter.__super__.constructor.apply(this, arguments);
       this.subscribeEvent('!logout', this.logout);
     }
 
-    Twitter.prototype.loadSDK = function() {
-      if (this.state() === 'resolved' || this.loading) return;
+    Twitter.prototype.load = function() {
+      if (this.state() === 'resolved' || this.loading) {
+        return;
+      }
       this.loading = true;
       return utils.loadLib("http://platform.twitter.com/anywhere.js?id=" + consumerKey + "&v=1", this.sdkLoadHandler, this.reject);
     };
@@ -607,7 +593,7 @@
         });
       });
       return this.subscribe('signOut', function() {
-        console.log('SIGNOUT EVENT');
+        console.log('Signout event');
         return callback();
       });
     };
@@ -640,8 +626,12 @@
     };
 
     Twitter.prototype.getLoginStatus = function(callback, force) {
-      if (callback == null) callback = this.loginStatusHandler;
-      if (force == null) force = false;
+      if (callback == null) {
+        callback = this.loginStatusHandler;
+      }
+      if (force == null) {
+        force = false;
+      }
       console.debug('Twitter#getLoginStatus');
       return callback(this.T);
     };
@@ -664,59 +654,218 @@
     return Twitter;
 
   })(ServiceProvider);
+  
+}});
 
-}).call(this);
+window.require.define({"lib/support": function(exports, require, module) {
+  var Chaplin, support, utils;
 
-  }
-}));
-(this.require.define({
-  "lib/support": function(exports, require, module) {
-    (function() {
-  var chaplinSupport, support, utils;
+  Chaplin = require('chaplin');
 
   utils = require('lib/utils');
 
-  chaplinSupport = require('chaplin/lib/support');
+  support = utils.beget(Chaplin.support);
 
-  module.exports = support = utils.beget(chaplinSupport);
+  module.exports = support;
+  
+}});
 
-}).call(this);
+window.require.define({"lib/utils": function(exports, require, module) {
+  var Chaplin, mediator, utils,
+    __hasProp = {}.hasOwnProperty;
 
-  }
-}));
-(this.require.define({
-  "lib/utils": function(exports, require, module) {
-    (function() {
-  var chaplinUtils, mediator, utils;
+  Chaplin = require('chaplin');
 
   mediator = require('mediator');
 
-  chaplinUtils = require('chaplin/lib/utils');
-
-  module.exports = utils = chaplinUtils.beget(chaplinUtils);
+  utils = Chaplin.utils.beget(Chaplin.utils);
 
   _(utils).extend({
-    facebookImageURL: function(fbId, type) {
-      var accessToken, params;
-      if (type == null) type = 'square';
-      params = {
-        type: type
-      };
-      if (mediator.user) {
-        accessToken = mediator.user.get('accessToken');
-        if (accessToken) params.access_token = accessToken;
+    loadLib: function(url, success, error, timeout) {
+      var head, onload, script, timeoutHandle;
+      if (timeout == null) {
+        timeout = 7500;
       }
-      return "https://graph.facebook.com/" + fbId + "/picture?" + ($.param(params));
+      head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+      script = document.createElement('script');
+      script.async = 'async';
+      script.src = url;
+      onload = function(_, aborted) {
+        if (aborted == null) {
+          aborted = false;
+        }
+        if (!(aborted || !script.readyState || script.readyState === 'complete')) {
+          return;
+        }
+        clearTimeout(timeoutHandle);
+        script.onload = script.onreadystatechange = script.onerror = null;
+        if (head && script.parentNode) {
+          head.removeChild(script);
+        }
+        script = void 0;
+        if (success && !aborted) {
+          return success();
+        }
+      };
+      script.onload = script.onreadystatechange = onload;
+      script.onerror = function() {
+        onload(null, true);
+        if (error) {
+          return error();
+        }
+      };
+      timeoutHandle = setTimeout(script.onerror, timeout);
+      return head.insertBefore(script, head.firstChild);
+    },
+    /*
+      Wrap methods so they can be called before a deferred is resolved.
+      The actual methods are called once the deferred is resolved.
+    
+      Parameters:
+    
+      Expects an options hash with the following properties:
+    
+      deferred
+        The Deferred object to wait for.
+    
+      methods
+        Either:
+        - A string with a method name e.g. 'method'
+        - An array of strings e.g. ['method1', 'method2']
+        - An object with methods e.g. {method: -> alert('resolved!')}
+    
+      host (optional)
+        If you pass an array of strings in the `methods` parameter the methods
+        are fetched from this object. Defaults to `deferred`.
+    
+      target (optional)
+        The target object the new wrapper methods are created at.
+        Defaults to host if host is given, otherwise it defaults to deferred.
+    
+      onDeferral (optional)
+        An additional callback function which is invoked when the method is called
+        and the Deferred isn't resolved yet.
+        After the method is registered as a done handler on the Deferred,
+        this callback is invoked. This can be used to trigger the resolving
+        of the Deferred.
+    
+      Examples:
+    
+      deferMethods(deferred: def, methods: 'foo')
+        Wrap the method named foo of the given deferred def and
+        postpone all calls until the deferred is resolved.
+    
+      deferMethods(deferred: def, methods: def.specialMethods)
+        Read all methods from the hash def.specialMethods and
+        create wrapped methods with the same names at def.
+    
+      deferMethods(
+        deferred: def, methods: def.specialMethods, target: def.specialMethods
+      )
+        Read all methods from the object def.specialMethods and
+        create wrapped methods at def.specialMethods,
+        overwriting the existing ones.
+    
+      deferMethods(deferred: def, host: obj, methods: ['foo', 'bar'])
+        Wrap the methods obj.foo and obj.bar so all calls to them are postponed
+        until def is resolved. obj.foo and obj.bar are overwritten
+        with their wrappers.
+    */
+
+    deferMethods: function(options) {
+      var deferred, func, host, methods, methodsHash, name, onDeferral, target, _i, _len, _results;
+      deferred = options.deferred;
+      methods = options.methods;
+      host = options.host || deferred;
+      target = options.target || host;
+      onDeferral = options.onDeferral;
+      methodsHash = {};
+      if (typeof methods === 'string') {
+        methodsHash[methods] = host[methods];
+      } else if (methods.length && methods[0]) {
+        for (_i = 0, _len = methods.length; _i < _len; _i++) {
+          name = methods[_i];
+          func = host[name];
+          if (typeof func !== 'function') {
+            throw new TypeError("utils.deferMethods: method " + name + " notfound on host " + host);
+          }
+          methodsHash[name] = func;
+        }
+      } else {
+        methodsHash = methods;
+      }
+      _results = [];
+      for (name in methodsHash) {
+        if (!__hasProp.call(methodsHash, name)) continue;
+        func = methodsHash[name];
+        if (typeof func !== 'function') {
+          continue;
+        }
+        _results.push(target[name] = utils.createDeferredFunction(deferred, func, target, onDeferral));
+      }
+      return _results;
+    },
+    createDeferredFunction: function(deferred, func, context, onDeferral) {
+      if (context == null) {
+        context = deferred;
+      }
+      return function() {
+        var args;
+        args = arguments;
+        if (deferred.state() === 'resolved') {
+          return func.apply(context, args);
+        } else {
+          deferred.done(function() {
+            return func.apply(context, args);
+          });
+          if (typeof onDeferral === 'function') {
+            return onDeferral.apply(context);
+          }
+        }
+      };
     }
   });
 
-}).call(this);
+  module.exports = utils;
+  
+}});
 
-  }
-}));
-(this.require.define({
-  "lib/view_helper": function(exports, require, module) {
-    (function() {
+window.require.define({"lib/view_helper": function(exports, require, module) {
+  var mediator, utils;
+
+  mediator = require('mediator');
+
+  utils = require('chaplin/lib/utils');
+
+  Handlebars.registerHelper('if_logged_in', function(options) {
+    if (mediator.user) {
+      return options.fn(this);
+    } else {
+      return options.inverse(this);
+    }
+  });
+
+  Handlebars.registerHelper('with', function(context, options) {
+    if (!context || Handlebars.Utils.isEmpty(context)) {
+      return options.inverse(this);
+    } else {
+      return options.fn(context);
+    }
+  });
+
+  Handlebars.registerHelper('without', function(context, options) {
+    var inverse;
+    inverse = options.inverse;
+    options.inverse = options.fn;
+    options.fn = inverse;
+    return Handlebars.helpers["with"].call(this, context, options);
+  });
+
+  Handlebars.registerHelper('with_user', function(options) {
+    var context;
+    context = mediator.user || {};
+    return Handlebars.helpers["with"].call(this, context, options);
+  });
 
   Handlebars.registerHelper('transform_if_retweeted', function(options) {
     var data;
@@ -744,92 +893,70 @@
     string = source === 'web' ? '' : options.fn(this);
     return new Handlebars.SafeString(string);
   });
+  
+}});
 
-}).call(this);
+window.require.define({"mediator": function(exports, require, module) {
+  
+  module.exports = require('chaplin').mediator;
+  
+}});
 
-  }
-}));
-(this.require.define({
-  "mediator": function(exports, require, module) {
-    (function() {
-  var createMediator, mediator;
+window.require.define({"models/base/collection": function(exports, require, module) {
+  var Chaplin, Collection,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  createMediator = require('chaplin/lib/create_mediator');
-
-  module.exports = mediator = createMediator({
-    createRouterProperty: true,
-    createUserProperty: true
-  });
-
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/collection": function(exports, require, module) {
-    (function() {
-  var ChaplinCollection, Collection,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
-
-  ChaplinCollection = require('chaplin/models/collection');
+  Chaplin = require('chaplin');
 
   module.exports = Collection = (function(_super) {
 
     __extends(Collection, _super);
 
     function Collection() {
-      Collection.__super__.constructor.apply(this, arguments);
+      return Collection.__super__.constructor.apply(this, arguments);
     }
 
     return Collection;
 
-  })(ChaplinCollection);
+  })(Chaplin.Collection);
+  
+}});
 
-}).call(this);
+window.require.define({"models/base/model": function(exports, require, module) {
+  var Chaplin, Model,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  }
-}));
-(this.require.define({
-  "models/model": function(exports, require, module) {
-    (function() {
-  var ChaplinModel, Model,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
-
-  ChaplinModel = require('chaplin/models/model');
+  Chaplin = require('chaplin');
 
   module.exports = Model = (function(_super) {
 
     __extends(Model, _super);
 
     function Model() {
-      Model.__super__.constructor.apply(this, arguments);
+      return Model.__super__.constructor.apply(this, arguments);
     }
 
     return Model;
 
-  })(ChaplinModel);
+  })(Chaplin.Model);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/navigation": function(exports, require, module) {
-    (function() {
+window.require.define({"models/navigation": function(exports, require, module) {
   var Model, Navigation,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Model = require('./model');
+  Model = require('models/base/model');
 
   module.exports = Navigation = (function(_super) {
 
     __extends(Navigation, _super);
 
     function Navigation() {
-      Navigation.__super__.constructor.apply(this, arguments);
+      return Navigation.__super__.constructor.apply(this, arguments);
     }
 
     Navigation.prototype.defaults = {
@@ -850,28 +977,24 @@
     return Navigation;
 
   })(Model);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/status": function(exports, require, module) {
-    (function() {
+window.require.define({"models/status": function(exports, require, module) {
   var Model, Status, mediator,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  Model = require('./model');
+  Model = require('models/base/model');
 
   module.exports = Status = (function(_super) {
 
     __extends(Status, _super);
 
     function Status() {
-      Status.__super__.constructor.apply(this, arguments);
+      return Status.__super__.constructor.apply(this, arguments);
     }
 
     Status.prototype.minLength = 1;
@@ -905,49 +1028,41 @@
     return Status;
 
   })(Model);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/tweet": function(exports, require, module) {
-    (function() {
+window.require.define({"models/tweet": function(exports, require, module) {
   var Model, Tweet,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Model = require('./model');
+  Model = require('models/base/model');
 
   module.exports = Tweet = (function(_super) {
 
     __extends(Tweet, _super);
 
     function Tweet() {
-      Tweet.__super__.constructor.apply(this, arguments);
+      return Tweet.__super__.constructor.apply(this, arguments);
     }
 
     return Tweet;
 
   })(Model);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/tweets": function(exports, require, module) {
-    (function() {
+window.require.define({"models/tweets": function(exports, require, module) {
   var Collection, Tweet, Tweets, mediator,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  Collection = require('./collection');
+  Collection = require('models/base/collection');
 
-  Tweet = require('./tweet');
+  Tweet = require('models/tweet');
 
   module.exports = Tweets = (function(_super) {
 
@@ -955,8 +1070,9 @@
 
     function Tweets() {
       this.addTweet = __bind(this.addTweet, this);
+
       this.processTweets = __bind(this.processTweets, this);
-      Tweets.__super__.constructor.apply(this, arguments);
+      return Tweets.__super__.constructor.apply(this, arguments);
     }
 
     Tweets.prototype.model = Tweet;
@@ -974,9 +1090,13 @@
       var provider, user;
       console.debug('Tweets#getTweets');
       user = mediator.user;
-      if (!user) return;
+      if (!user) {
+        return;
+      }
       provider = user.get('provider');
-      if (provider.name !== 'twitter') return;
+      if (provider.name !== 'twitter') {
+        return;
+      }
       this.trigger('loadStart');
       return provider.T.currentUser.homeTimeline(this.processTweets);
     };
@@ -1002,22 +1122,18 @@
     return Tweets;
 
   })(Collection);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "models/user": function(exports, require, module) {
-    (function() {
+window.require.define({"models/user": function(exports, require, module) {
   var Model, User, mediator,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  Model = require('./model');
+  Model = require('models/base/model');
 
   module.exports = User = (function(_super) {
 
@@ -1025,7 +1141,7 @@
 
     function User() {
       this.initializeMethods = __bind(this.initializeMethods, this);
-      User.__super__.constructor.apply(this, arguments);
+      return User.__super__.constructor.apply(this, arguments);
     }
 
     User.prototype.initialize = function() {
@@ -1045,34 +1161,132 @@
     return User;
 
   })(Model);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "routes": function(exports, require, module) {
-    (function() {
-
+window.require.define({"routes": function(exports, require, module) {
+  
   module.exports = function(match) {
     match('', 'tweets#index');
     match('@:user', 'user#show');
     return match('logout', 'navigation#logout');
   };
+  
+}});
 
-}).call(this);
+window.require.define({"views/base/collection_view": function(exports, require, module) {
+  var Chaplin, CollectionView, View,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  }
-}));
-(this.require.define({
-  "views/composite_view": function(exports, require, module) {
-    (function() {
+  Chaplin = require('chaplin');
+
+  View = require('views/base/view');
+
+  module.exports = CollectionView = (function(_super) {
+
+    __extends(CollectionView, _super);
+
+    function CollectionView() {
+      return CollectionView.__super__.constructor.apply(this, arguments);
+    }
+
+    CollectionView.prototype.getTemplateFunction = View.prototype.getTemplateFunction;
+
+    return CollectionView;
+
+  })(Chaplin.CollectionView);
+  
+}});
+
+window.require.define({"views/base/page_view": function(exports, require, module) {
+  var PageView, View, mediator,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  mediator = require('mediator');
+
+  View = require('views/base/view');
+
+  module.exports = PageView = (function(_super) {
+
+    __extends(PageView, _super);
+
+    function PageView() {
+      return PageView.__super__.constructor.apply(this, arguments);
+    }
+
+    PageView.prototype.container = '#page-container';
+
+    PageView.prototype.autoRender = true;
+
+    PageView.prototype.renderedSubviews = false;
+
+    PageView.prototype.initialize = function() {
+      var rendered,
+        _this = this;
+      PageView.__super__.initialize.apply(this, arguments);
+      if (this.model || this.collection) {
+        rendered = false;
+        return this.modelBind('change', function() {
+          if (!rendered) {
+            _this.render();
+          }
+          return rendered = true;
+        });
+      }
+    };
+
+    PageView.prototype.renderSubviews = function() {};
+
+    PageView.prototype.render = function() {
+      PageView.__super__.render.apply(this, arguments);
+      if (!this.renderedSubviews) {
+        this.renderSubviews();
+        return this.renderedSubviews = true;
+      }
+    };
+
+    return PageView;
+
+  })(View);
+  
+}});
+
+window.require.define({"views/base/view": function(exports, require, module) {
+  var Chaplin, View,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  Chaplin = require('chaplin');
+
+  require('lib/view_helper');
+
+  module.exports = View = (function(_super) {
+
+    __extends(View, _super);
+
+    function View() {
+      return View.__super__.constructor.apply(this, arguments);
+    }
+
+    View.prototype.getTemplateFunction = function() {
+      return this.template;
+    };
+
+    return View;
+
+  })(Chaplin.View);
+  
+}});
+
+window.require.define({"views/composite_view": function(exports, require, module) {
   var CompositeView, View,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  View = require('views/view');
+  View = require('views/base/view');
 
   module.exports = CompositeView = (function(_super) {
 
@@ -1080,8 +1294,9 @@
 
     function CompositeView() {
       this.dispose = __bind(this.dispose, this);
+
       this.render = __bind(this.render, this);
-      CompositeView.__super__.constructor.apply(this, arguments);
+      return CompositeView.__super__.constructor.apply(this, arguments);
     }
 
     CompositeView.prototype.initialize = function() {
@@ -1096,7 +1311,7 @@
     CompositeView.prototype.renderSubViews = function() {
       var _this = this;
       return _(this.subViews).forEach(function(view) {
-        return _this.$(view.containerSelector).append(view.render().el);
+        return _this.$(view.container).append(view.render().el);
       });
     };
 
@@ -1116,39 +1331,60 @@
     return CompositeView;
 
   })(View);
+  
+}});
 
-}).call(this);
+window.require.define({"views/layout": function(exports, require, module) {
+  var Chaplin, Layout,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  }
-}));
-(this.require.define({
-  "views/login_view": function(exports, require, module) {
-    (function() {
+  Chaplin = require('chaplin');
+
+  module.exports = Layout = (function(_super) {
+
+    __extends(Layout, _super);
+
+    function Layout() {
+      return Layout.__super__.constructor.apply(this, arguments);
+    }
+
+    Layout.prototype.initialize = function() {
+      return Layout.__super__.initialize.apply(this, arguments);
+    };
+
+    return Layout;
+
+  })(Chaplin.Layout);
+  
+}});
+
+window.require.define({"views/login_view": function(exports, require, module) {
   var LoginView, View, mediator, template, utils,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
   utils = require('lib/utils');
 
-  View = require('./view');
+  View = require('views/base/view');
 
-  template = require('./templates/login');
+  template = require('views/templates/login');
 
   module.exports = LoginView = (function(_super) {
 
     __extends(LoginView, _super);
 
     function LoginView() {
-      LoginView.__super__.constructor.apply(this, arguments);
+      return LoginView.__super__.constructor.apply(this, arguments);
     }
 
     LoginView.prototype.template = template;
 
     LoginView.prototype.id = 'login';
 
-    LoginView.prototype.containerSelector = '#content-container';
+    LoginView.prototype.container = '#content-container';
 
     LoginView.prototype.autoRender = true;
 
@@ -1179,7 +1415,9 @@
     LoginView.prototype.loginWith = function(serviceProviderName, serviceProvider, e) {
       console.debug('LoginView#loginWith', serviceProviderName, serviceProvider);
       e.preventDefault();
-      if (!serviceProvider.isLoaded()) return;
+      if (!serviceProvider.isLoaded()) {
+        return;
+      }
       mediator.publish('login:pickService', serviceProviderName);
       return mediator.publish('!login', serviceProviderName);
     };
@@ -1195,37 +1433,33 @@
     return LoginView;
 
   })(View);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/navigation_view": function(exports, require, module) {
-    (function() {
+window.require.define({"views/navigation_view": function(exports, require, module) {
   var NavigationView, View, mediator, template,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  View = require('./view');
+  View = require('views/base/view');
 
-  template = require('./templates/navigation');
+  template = require('views/templates/navigation');
 
   module.exports = NavigationView = (function(_super) {
 
     __extends(NavigationView, _super);
 
     function NavigationView() {
-      NavigationView.__super__.constructor.apply(this, arguments);
+      return NavigationView.__super__.constructor.apply(this, arguments);
     }
 
     NavigationView.prototype.template = template;
 
     NavigationView.prototype.id = 'navigation';
 
-    NavigationView.prototype.containerSelector = '#navigation-container';
+    NavigationView.prototype.container = '#navigation-container';
 
     NavigationView.prototype.autoRender = true;
 
@@ -1238,28 +1472,24 @@
     return NavigationView;
 
   })(View);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/sidebar_view": function(exports, require, module) {
-    (function() {
+window.require.define({"views/sidebar_view": function(exports, require, module) {
   var CompositeView, SidebarView, StatsView, StatusView, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  CompositeView = require('./composite_view');
+  CompositeView = require('views/composite_view');
 
-  StatsView = require('./stats_view');
+  StatsView = require('views/stats_view');
 
-  StatusView = require('./status_view');
+  StatusView = require('views/status_view');
 
-  template = require('./templates/sidebar');
+  template = require('views/templates/sidebar');
 
   module.exports = SidebarView = (function(_super) {
 
@@ -1267,14 +1497,14 @@
 
     function SidebarView() {
       this.loginStatusHandler = __bind(this.loginStatusHandler, this);
-      SidebarView.__super__.constructor.apply(this, arguments);
+      return SidebarView.__super__.constructor.apply(this, arguments);
     }
 
     SidebarView.prototype.template = template;
 
     SidebarView.prototype.id = 'sidebar';
 
-    SidebarView.prototype.containerSelector = '#sidebar-container';
+    SidebarView.prototype.container = '#sidebar-container';
 
     SidebarView.prototype.autoRender = true;
 
@@ -1287,35 +1517,27 @@
     };
 
     SidebarView.prototype.loginStatusHandler = function(loggedIn) {
-      if (loggedIn) {
-        this.model = mediator.user;
-      } else {
-        this.model = null;
-      }
+      this.model = loggedIn ? mediator.user : null;
       return this.render();
     };
 
     return SidebarView;
 
   })(CompositeView);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/stats_view": function(exports, require, module) {
-    (function() {
+window.require.define({"views/stats_view": function(exports, require, module) {
   var StatsView, View, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  View = require('./view');
+  View = require('views/base/view');
 
-  template = require('./templates/stats');
+  template = require('views/templates/stats');
 
   module.exports = StatsView = (function(_super) {
 
@@ -1323,7 +1545,7 @@
 
     function StatsView() {
       this.loginStatusHandler = __bind(this.loginStatusHandler, this);
-      StatsView.__super__.constructor.apply(this, arguments);
+      return StatsView.__super__.constructor.apply(this, arguments);
     }
 
     StatsView.prototype.template = template;
@@ -1332,7 +1554,7 @@
 
     StatsView.prototype.tagName = 'ul';
 
-    StatsView.prototype.containerSelector = '#stats-container';
+    StatsView.prototype.container = '#stats-container';
 
     StatsView.prototype.initialize = function() {
       StatsView.__super__.initialize.apply(this, arguments);
@@ -1352,26 +1574,22 @@
     return StatsView;
 
   })(View);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/status_view": function(exports, require, module) {
-    (function() {
+window.require.define({"views/status_view": function(exports, require, module) {
   var Status, StatusView, View, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
   Status = require('models/status');
 
-  View = require('./view');
+  View = require('views/base/view');
 
-  template = require('./templates/status');
+  template = require('views/templates/status');
 
   module.exports = StatusView = (function(_super) {
 
@@ -1379,11 +1597,15 @@
 
     function StatusView() {
       this.render = __bind(this.render, this);
+
       this.createStatus = __bind(this.createStatus, this);
+
       this.updateStatusText = __bind(this.updateStatusText, this);
+
       this.updateCharacterCount = __bind(this.updateCharacterCount, this);
+
       this.loginStatusHandler = __bind(this.loginStatusHandler, this);
-      StatusView.__super__.constructor.apply(this, arguments);
+      return StatusView.__super__.constructor.apply(this, arguments);
     }
 
     StatusView.prototype.template = template;
@@ -1392,7 +1614,7 @@
 
     StatusView.prototype.className = 'status';
 
-    StatusView.prototype.containerSelector = '#status-container';
+    StatusView.prototype.container = '#status-container';
 
     StatusView.prototype.initialize = function() {
       StatusView.__super__.initialize.apply(this, arguments);
@@ -1418,7 +1640,9 @@
         $charCount.removeClass('status-character-count-invalid');
         return $createButton.removeAttr('disabled');
       } else {
-        if (count !== 140) $charCount.addClass('status-character-count-invalid');
+        if (count !== 140) {
+          $charCount.addClass('status-character-count-invalid');
+        }
         return $createButton.attr('disabled', 'disabled');
       }
     };
@@ -1458,339 +1682,328 @@
     return StatusView;
 
   })(View);
-
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/templates/login": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var foundHelper, self=this;
-
-
-  return "<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button twitter\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
-  }
-}));
-(this.require.define({
-  "views/templates/navigation": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
-
-function program1(depth0,data) {
   
-  var buffer = "", stack1, stack2;
-  buffer += "\n  <div class=\"navbar-inner\">\n    <div class=\"container\">\n      <div class=\"nav-collapse\">\n        <ul class=\"nav\">\n          ";
-  foundHelper = helpers.items;
-  stack1 = foundHelper || depth0.items;
-  stack2 = helpers.each;
-  tmp1 = self.program(2, program2, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  stack1 = stack2.call(depth0, stack1, tmp1);
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n        </ul>\n      </div>\n    </div>\n  </div>\n";
-  return buffer;}
-function program2(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n            <li class=\"nav-item\">\n              <a class=\"nav-item-link\" href=\"#";
-  stack1 = depth0.href;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this.href", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n                <div class=\"nav-item-icon-container\">\n                  <span class=\"nav-item-icon\"></span>\n                </div>\n                <span class=\"nav-item-title\">";
-  stack1 = depth0.title;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this.title", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</span>\n              </a>\n            </li>\n          ";
-  return buffer;}
+}});
 
-  foundHelper = helpers.if_logged_in;
-  stack1 = foundHelper || depth0.if_logged_in;
-  tmp1 = self.program(1, program1, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n";
-  return buffer;});
-  }
-}));
-(this.require.define({
-  "views/templates/sidebar": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
-
-function program1(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n  <div class=\"account-summary-container\">\n    <div class=\"account-summary\">\n      <img class=\"account-summary-avatar avatar size32\" src=\"";
-  foundHelper = helpers.profile_image_url;
-  stack1 = foundHelper || depth0.profile_image_url;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "profile_image_url", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\" alt=\"";
-  foundHelper = helpers.name;
-  stack1 = foundHelper || depth0.name;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n      <div class=\"account-summary-content\">\n        <strong class=\"account-summary-full-name\">";
-  foundHelper = helpers.name;
-  stack1 = foundHelper || depth0.name;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong>\n        <small class=\"account-summary-metadata\">View my profile page</small>\n      </div>\n    </div>\n  </div>\n  <div class=\"stats-container\" id=\"stats-container\"></div>\n  <div class=\"status-container\" id=\"status-container\"></div>\n";
-  return buffer;}
-
-function program3(depth0,data) {
-  
-  
-  return "\n  <div class=\"app-description\">\n    Tweet your brunch is a simple twitter client built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>.\n  </div>\n";}
-
-  foundHelper = helpers.if_logged_in;
-  stack1 = foundHelper || depth0.if_logged_in;
-  tmp1 = self.program(1, program1, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.program(3, program3, data);
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n";
-  return buffer;});
-  }
-}));
-(this.require.define({
-  "views/templates/stats": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
+window.require.define({"views/templates/login": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var foundHelper, self=this;
 
 
-  buffer += "<li class=\"stat-tweets\"><strong>";
-  foundHelper = helpers.statuses_count;
-  stack1 = foundHelper || depth0.statuses_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "statuses_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> tweets</li>\n<li class=\"stat-following\"><strong>";
-  foundHelper = helpers.friends_count;
-  stack1 = foundHelper || depth0.friends_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "friends_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> following</li>\n<li class=\"stat-followers\"><strong>";
-  foundHelper = helpers.followers_count;
-  stack1 = foundHelper || depth0.followers_count;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</strong> followers</li>\n";
-  return buffer;});
-  }
-}));
-(this.require.define({
-  "views/templates/status": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
+    return "<div class=\"login-note\">\n  <h3>Tweet your brunch</h3>\n  <img class=\"sign-in-button twitter\" src=\"https://si0.twimg.com/images/dev/buttons/sign-in-with-twitter-l.png\" alt=\"Sign in with Twitter\" /> \n</div>\n";});
+}});
 
-function program1(depth0,data) {
-  
-  
-  return "\n  <textarea class=\"status-text\" placeholder=\"What's happening?\"></textarea>\n  <div class=\"status-info\">\n    <span class=\"status-character-count\">140</span>\n    <button class=\"status-create-button btn btn-primary\" disabled>Tweet</button>\n  </div>\n";}
+window.require.define({"views/templates/navigation": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
 
-  foundHelper = helpers.if_logged_in;
-  stack1 = foundHelper || depth0.if_logged_in;
-  tmp1 = self.program(1, program1, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n";
-  return buffer;});
-  }
-}));
-(this.require.define({
-  "views/templates/tweet": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
+  function program1(depth0,data) {
+    
+    var buffer = "", stack1, stack2;
+    buffer += "\n  <div class=\"navbar-inner\">\n    <div class=\"container\">\n      <div class=\"nav-collapse\">\n        <ul class=\"nav\">\n          ";
+    foundHelper = helpers.items;
+    stack1 = foundHelper || depth0.items;
+    stack2 = helpers.each;
+    tmp1 = self.program(2, program2, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    stack1 = stack2.call(depth0, stack1, tmp1);
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n        </ul>\n      </div>\n    </div>\n  </div>\n";
+    return buffer;}
+  function program2(depth0,data) {
+    
+    var buffer = "", stack1;
+    buffer += "\n            <li class=\"nav-item\">\n              <a class=\"nav-item-link\" href=\"#";
+    stack1 = depth0.href;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this.href", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">\n                <div class=\"nav-item-icon-container\">\n                  <span class=\"nav-item-icon\"></span>\n                </div>\n                <span class=\"nav-item-title\">";
+    stack1 = depth0.title;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this.title", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</span>\n              </a>\n            </li>\n          ";
+    return buffer;}
 
-function program1(depth0,data) {
-  
-  var buffer = "", stack1, stack2;
-  buffer += "\n  <div class=\"tweet-content\">\n    <header class=\"tweet-header\">\n      <a href=\"https://twitter.com/";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n        <img class=\"avatar\" src=\"";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profile_image_url);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profile_image_url", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\" alt=\"\" />\n        <strong class=\"tweet-author-full-name\">\n          ";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\n        </strong>\n      </a>\n    </header>\n    <p class=\"tweet-text\">";
-  foundHelper = helpers.auto_link;
-  stack1 = foundHelper || depth0.auto_link;
-  tmp1 = self.program(2, program2, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</p>\n    <footer class=\"tweet-footer\">\n      <a href=\"http://twitter.com/";
-  foundHelper = helpers.user;
-  stack1 = foundHelper || depth0.user;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "/status/";
-  foundHelper = helpers.id_str;
-  stack1 = foundHelper || depth0.id_str;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id_str", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n        <time class=\"tweet-created-at\" datetime=\"";
-  foundHelper = helpers.created_at;
-  stack1 = foundHelper || depth0.created_at;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">\n          ";
-  foundHelper = helpers.format_date;
-  stack1 = foundHelper || depth0.format_date;
-  tmp1 = self.program(4, program4, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n        </time>\n      </a>\n      ";
-  foundHelper = helpers.source;
-  stack1 = foundHelper || depth0.source;
-  foundHelper = helpers.unless_is_web;
-  stack2 = foundHelper || depth0.unless_is_web;
-  tmp1 = self.program(6, program6, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n      ";
-  foundHelper = helpers.retweeter;
-  stack1 = foundHelper || depth0.retweeter;
-  stack2 = helpers['if'];
-  tmp1 = self.program(8, program8, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  stack1 = stack2.call(depth0, stack1, tmp1);
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n    </footer>\n  </div>\n";
-  return buffer;}
-function program2(depth0,data) {
-  
-  var stack1;
-  foundHelper = helpers.text;
-  stack1 = foundHelper || depth0.text;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "text", { hash: {} }); }
-  return escapeExpression(stack1);}
+    foundHelper = helpers.if_logged_in;
+    stack1 = foundHelper || depth0.if_logged_in;
+    tmp1 = self.program(1, program1, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n";
+    return buffer;});
+}});
 
-function program4(depth0,data) {
-  
-  var stack1;
-  foundHelper = helpers.created_at;
-  stack1 = foundHelper || depth0.created_at;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
-  return escapeExpression(stack1);}
+window.require.define({"views/templates/sidebar": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
 
-function program6(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n        via <span class=\"tweet-source\">";
-  foundHelper = helpers.source;
-  stack1 = foundHelper || depth0.source;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "source", { hash: {} }); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</span>\n      ";
-  return buffer;}
+  function program1(depth0,data) {
+    
+    var buffer = "", stack1;
+    buffer += "\n  <div class=\"account-summary-container\">\n    <div class=\"account-summary\">\n      <img class=\"account-summary-avatar avatar size32\" src=\"";
+    foundHelper = helpers.profile_image_url;
+    stack1 = foundHelper || depth0.profile_image_url;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "profile_image_url", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\" alt=\"";
+    foundHelper = helpers.name;
+    stack1 = foundHelper || depth0.name;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">\n      <div class=\"account-summary-content\">\n        <strong class=\"account-summary-full-name\">";
+    foundHelper = helpers.name;
+    stack1 = foundHelper || depth0.name;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</strong>\n        <small class=\"account-summary-metadata\">View my profile page</small>\n      </div>\n    </div>\n  </div>\n  <div class=\"stats-container\" id=\"stats-container\"></div>\n  <div class=\"status-container\" id=\"status-container\"></div>\n";
+    return buffer;}
 
-function program8(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n        <p class=\"tweet-retweeter\">\n          Retweeted by <a class=\"tweet-retweeter-username\" href=\"https://twitter.com/";
-  foundHelper = helpers.retweeter;
-  stack1 = foundHelper || depth0.retweeter;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">";
-  foundHelper = helpers.retweeter;
-  stack1 = foundHelper || depth0.retweeter;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</a>\n        </p>\n      ";
-  return buffer;}
+  function program3(depth0,data) {
+    
+    
+    return "\n  <div class=\"app-description\">\n    Tweet your brunch is a simple twitter client built with <a href=\"http://brunch.io/\">Brunch</a> &amp; <a href=\"https://github.com/paulmillr/brunch-with-chaplin\">Brunch with Chaplin</a>.\n  </div>\n";}
 
-  foundHelper = helpers.transform_if_retweeted;
-  stack1 = foundHelper || depth0.transform_if_retweeted;
-  tmp1 = self.program(1, program1, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n";
-  return buffer;});
-  }
-}));
-(this.require.define({
-  "views/templates/tweets": function(exports, require, module) {
-    module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var foundHelper, self=this;
+    foundHelper = helpers.if_logged_in;
+    stack1 = foundHelper || depth0.if_logged_in;
+    tmp1 = self.program(1, program1, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.program(3, program3, data);
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n";
+    return buffer;});
+}});
+
+window.require.define({"views/templates/stats": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var buffer = "", stack1, foundHelper, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
 
 
-  return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n</header>\n<div class=\"tweets\"></div>\n";});
-  }
-}));
-(this.require.define({
-  "views/tweet_view": function(exports, require, module) {
-    (function() {
+    buffer += "<li class=\"stat-tweets\"><strong>";
+    foundHelper = helpers.statuses_count;
+    stack1 = foundHelper || depth0.statuses_count;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "statuses_count", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</strong> tweets</li>\n<li class=\"stat-following\"><strong>";
+    foundHelper = helpers.friends_count;
+    stack1 = foundHelper || depth0.friends_count;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "friends_count", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</strong> following</li>\n<li class=\"stat-followers\"><strong>";
+    foundHelper = helpers.followers_count;
+    stack1 = foundHelper || depth0.followers_count;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "followers_count", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</strong> followers</li>\n";
+    return buffer;});
+}});
+
+window.require.define({"views/templates/status": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
+
+  function program1(depth0,data) {
+    
+    
+    return "\n  <textarea class=\"status-text\" placeholder=\"What's happening?\"></textarea>\n  <div class=\"status-info\">\n    <span class=\"status-character-count\">140</span>\n    <button class=\"status-create-button btn btn-primary\" disabled>Tweet</button>\n  </div>\n";}
+
+    foundHelper = helpers.if_logged_in;
+    stack1 = foundHelper || depth0.if_logged_in;
+    tmp1 = self.program(1, program1, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n";
+    return buffer;});
+}});
+
+window.require.define({"views/templates/tweet": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
+
+  function program1(depth0,data) {
+    
+    var buffer = "", stack1, stack2;
+    buffer += "\n  <div class=\"tweet-content\">\n    <header class=\"tweet-header\">\n      <a href=\"https://twitter.com/";
+    foundHelper = helpers.user;
+    stack1 = foundHelper || depth0.user;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">\n        <img class=\"avatar\" src=\"";
+    foundHelper = helpers.user;
+    stack1 = foundHelper || depth0.user;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.profile_image_url);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.profile_image_url", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\" alt=\"\" />\n        <strong class=\"tweet-author-full-name\">\n          ";
+    foundHelper = helpers.user;
+    stack1 = foundHelper || depth0.user;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.name);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\n        </strong>\n      </a>\n    </header>\n    <p class=\"tweet-text\">";
+    foundHelper = helpers.auto_link;
+    stack1 = foundHelper || depth0.auto_link;
+    tmp1 = self.program(2, program2, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "</p>\n    <footer class=\"tweet-footer\">\n      <a href=\"http://twitter.com/";
+    foundHelper = helpers.user;
+    stack1 = foundHelper || depth0.user;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "user.screen_name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "/status/";
+    foundHelper = helpers.id_str;
+    stack1 = foundHelper || depth0.id_str;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id_str", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">\n        <time class=\"tweet-created-at\" datetime=\"";
+    foundHelper = helpers.created_at;
+    stack1 = foundHelper || depth0.created_at;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">\n          ";
+    foundHelper = helpers.format_date;
+    stack1 = foundHelper || depth0.format_date;
+    tmp1 = self.program(4, program4, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n        </time>\n      </a>\n      ";
+    foundHelper = helpers.source;
+    stack1 = foundHelper || depth0.source;
+    foundHelper = helpers.unless_is_web;
+    stack2 = foundHelper || depth0.unless_is_web;
+    tmp1 = self.program(6, program6, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n      ";
+    foundHelper = helpers.retweeter;
+    stack1 = foundHelper || depth0.retweeter;
+    stack2 = helpers['if'];
+    tmp1 = self.program(8, program8, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    stack1 = stack2.call(depth0, stack1, tmp1);
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n    </footer>\n  </div>\n";
+    return buffer;}
+  function program2(depth0,data) {
+    
+    var stack1;
+    foundHelper = helpers.text;
+    stack1 = foundHelper || depth0.text;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "text", { hash: {} }); }
+    return escapeExpression(stack1);}
+
+  function program4(depth0,data) {
+    
+    var stack1;
+    foundHelper = helpers.created_at;
+    stack1 = foundHelper || depth0.created_at;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "created_at", { hash: {} }); }
+    return escapeExpression(stack1);}
+
+  function program6(depth0,data) {
+    
+    var buffer = "", stack1;
+    buffer += "\n        via <span class=\"tweet-source\">";
+    foundHelper = helpers.source;
+    stack1 = foundHelper || depth0.source;
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "source", { hash: {} }); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "</span>\n      ";
+    return buffer;}
+
+  function program8(depth0,data) {
+    
+    var buffer = "", stack1;
+    buffer += "\n        <p class=\"tweet-retweeter\">\n          Retweeted by <a class=\"tweet-retweeter-username\" href=\"https://twitter.com/";
+    foundHelper = helpers.retweeter;
+    stack1 = foundHelper || depth0.retweeter;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "\">";
+    foundHelper = helpers.retweeter;
+    stack1 = foundHelper || depth0.retweeter;
+    stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.screen_name);
+    if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+    else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "retweeter.screen_name", { hash: {} }); }
+    buffer += escapeExpression(stack1) + "</a>\n        </p>\n      ";
+    return buffer;}
+
+    foundHelper = helpers.transform_if_retweeted;
+    stack1 = foundHelper || depth0.transform_if_retweeted;
+    tmp1 = self.program(1, program1, data);
+    tmp1.hash = {};
+    tmp1.fn = tmp1;
+    tmp1.inverse = self.noop;
+    if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+    else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+    if(stack1 || stack1 === 0) { buffer += stack1; }
+    buffer += "\n";
+    return buffer;});
+}});
+
+window.require.define({"views/templates/tweets": function(exports, require, module) {
+  module.exports = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+    helpers = helpers || Handlebars.helpers;
+    var foundHelper, self=this;
+
+
+    return "<header class=\"tweets-header\">\n  <h3>Tweets</h3>\n</header>\n<div class=\"tweets\"></div>\n";});
+}});
+
+window.require.define({"views/tweet_view": function(exports, require, module) {
   var TweetView, View, template,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  template = require('./templates/tweet');
+  template = require('views/templates/tweet');
 
-  View = require('./view');
+  View = require('views/base/view');
 
   module.exports = TweetView = (function(_super) {
 
     __extends(TweetView, _super);
 
     function TweetView() {
-      TweetView.__super__.constructor.apply(this, arguments);
+      return TweetView.__super__.constructor.apply(this, arguments);
     }
 
     TweetView.prototype.template = template;
@@ -1800,32 +2013,28 @@ function program8(depth0,data) {
     return TweetView;
 
   })(View);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/tweets_view": function(exports, require, module) {
-    (function() {
+window.require.define({"views/tweets_view": function(exports, require, module) {
   var CollectionView, TweetView, TweetsView, mediator, template,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  CollectionView = require('chaplin/views/collection_view');
+  CollectionView = require('views/base/collection_view');
 
-  TweetView = require('./tweet_view');
+  TweetView = require('views/tweet_view');
 
-  template = require('./templates/tweets');
+  template = require('views/templates/tweets');
 
   module.exports = TweetsView = (function(_super) {
 
     __extends(TweetsView, _super);
 
     function TweetsView() {
-      TweetsView.__super__.constructor.apply(this, arguments);
+      return TweetsView.__super__.constructor.apply(this, arguments);
     }
 
     TweetsView.prototype.template = template;
@@ -1834,7 +2043,7 @@ function program8(depth0,data) {
 
     TweetsView.prototype.id = 'tweets';
 
-    TweetsView.prototype.containerSelector = '#content-container';
+    TweetsView.prototype.container = '#content-container';
 
     TweetsView.prototype.listSelector = '.tweets';
 
@@ -1856,46 +2065,13 @@ function program8(depth0,data) {
     };
 
     TweetsView.prototype.render = function() {
-      console.log('TweetsView#render', this, this.$el);
       TweetsView.__super__.render.apply(this, arguments);
       return this.showHideLoginNote();
-    };
-
-    TweetsView.prototype.afterRender = function() {
-      TweetsView.__super__.afterRender.apply(this, arguments);
-      return console.log('TweetsView#afterRender', this.containerSelector, $(this.containerSelector));
     };
 
     return TweetsView;
 
   })(CollectionView);
+  
+}});
 
-}).call(this);
-
-  }
-}));
-(this.require.define({
-  "views/view": function(exports, require, module) {
-    (function() {
-  var ChaplinView, View,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
-
-  ChaplinView = require('chaplin/views/view');
-
-  module.exports = View = (function(_super) {
-
-    __extends(View, _super);
-
-    function View() {
-      View.__super__.constructor.apply(this, arguments);
-    }
-
-    return View;
-
-  })(ChaplinView);
-
-}).call(this);
-
-  }
-}));
