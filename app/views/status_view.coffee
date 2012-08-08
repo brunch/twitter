@@ -1,7 +1,7 @@
 mediator = require 'mediator'
 Status = require 'models/status'
-View = require './view'
-template = require './templates/status'
+View = require 'views/base/view'
+template = require 'views/templates/status'
 
 module.exports = class StatusView extends View
   template: template

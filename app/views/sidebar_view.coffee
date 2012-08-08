@@ -1,8 +1,8 @@
 mediator = require 'mediator'
-CompositeView = require './composite_view'
-StatsView = require './stats_view'
-StatusView = require './status_view'
-template = require './templates/sidebar'
+CompositeView = require 'views/composite_view'
+StatsView = require 'views/stats_view'
+StatusView = require 'views/status_view'
+template = require 'views/templates/sidebar'
 
 module.exports = class SidebarView extends CompositeView
   template: template

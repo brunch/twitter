@@ -1,7 +1,7 @@
 mediator = require 'mediator'
 utils = require 'lib/utils'
-View = require './view'
-template = require './templates/login'
+View = require 'views/base/view'
+template = require 'views/templates/login'
 
 module.exports = class LoginView extends View
   # This is a workaround.

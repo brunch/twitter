@@ -1,4 +1,4 @@
-View = require 'views/view'
+View = require 'views/base/view'
 
 module.exports = class CompositeView extends View
   initialize: ->

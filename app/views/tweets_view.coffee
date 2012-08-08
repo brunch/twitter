@@ -1,5 +1,5 @@
 mediator = require 'mediator'
-CollectionView = require 'chaplin/views/collection_view'
+CollectionView = require 'views/base/collection_view'
 TweetView = require 'views/tweet_view'
 template = require 'views/templates/tweets'
 

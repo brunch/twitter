@@ -1,4 +1,4 @@
-Controller = require './controller'
+Controller = require 'controllers/base/controller'
 SidebarView = require 'views/sidebar_view'
 StatusView = require 'views/status_view'
 

@@ -1,6 +1,6 @@
 mediator = require 'mediator'
-Collection = require './collection'
-Tweet = require './tweet'
+Collection = require 'models/base/collection'
+Tweet = require 'models/tweet'
 
 module.exports = class Tweets extends Collection
   model: Tweet

@@ -44,7 +44,7 @@ module.exports = class Twitter extends ServiceProvider
     @subscribe 'authComplete', (event, currentUser, accessToken) ->
       callback {currentUser, accessToken}
     @subscribe 'signOut', ->
-      console.log 'SIGNOUT EVENT'
+      console.log 'Signout event'
       callback()
 
   # Publish session & userData events and

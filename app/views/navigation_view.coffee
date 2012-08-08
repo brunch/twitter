@@ -1,6 +1,6 @@
 mediator = require 'mediator'
-View = require './view'
-template = require './templates/navigation'
+View = require 'views/base/view'
+template = require 'views/templates/navigation'
 
 module.exports = class NavigationView extends View
   # This is a workaround.

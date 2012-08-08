@@ -1,6 +1,6 @@
 mediator = require 'mediator'
-View = require './view'
-template = require './templates/stats'
+View = require 'views/base/view'
+template = require 'views/templates/stats'
 
 module.exports = class StatsView extends View
   template: template

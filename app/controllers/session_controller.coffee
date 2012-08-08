@@ -1,7 +1,7 @@
 mediator = require 'mediator'
 utils = require 'lib/utils'
 User = require 'models/user'
-Controller = require './controller'
+Controller = require 'controllers/base/controller'
 Twitter = require 'lib/services/twitter'
 LoginView = require 'views/login_view'
 
