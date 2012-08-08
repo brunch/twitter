@@ -8,7 +8,7 @@ module.exports = class NavigationView extends View
   template: template
 
   id: 'navigation'
-  containerSelector: '#navigation-container'
+  container: '#navigation-container'
   autoRender: true
 
   initialize: ->

@@ -9,7 +9,7 @@ module.exports = class LoginView extends View
   template: template
 
   id: 'login'
-  containerSelector: '#content-container'
+  container: '#content-container'
   autoRender: true
 
   # Expects the serviceProviders in the options

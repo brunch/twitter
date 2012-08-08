@@ -7,7 +7,7 @@ module.exports = class StatusView extends View
   template: template
   id: 'status'
   className: 'status'
-  containerSelector: '#status-container'
+  container: '#status-container'
 
   initialize: ->
     super

@@ -10,7 +10,7 @@ module.exports = class CompositeView extends View
 
   renderSubViews: ->
     _(@subViews).forEach (view) =>
-      @$(view.containerSelector).append view.render().el
+      @$(view.container).append view.render().el
 
   render: =>
     super

@@ -8,7 +8,7 @@ module.exports = class SidebarView extends CompositeView
   template: template
 
   id: 'sidebar'
-  containerSelector: '#sidebar-container'
+  container: '#sidebar-container'
   autoRender: true
 
   initialize: ->
@@ -19,8 +19,5 @@ module.exports = class SidebarView extends CompositeView
     @subscribeEvent 'userData', @render
 
   loginStatusHandler: (loggedIn) =>
-    if loggedIn
-      @model = mediator.user
-    else
-      @model = null
+    @model = if loggedIn then mediator.user else null
     @render()

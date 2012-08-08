@@ -9,7 +9,7 @@ module.exports = class TweetsView extends CollectionView
   tagName: 'div' # This is not directly a list but contains a list
   id: 'tweets'
 
-  containerSelector: '#content-container'
+  container: '#content-container'
   listSelector: '.tweets' # Append the item views to this element
   fallbackSelector: '.fallback'
 

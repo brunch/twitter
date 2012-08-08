@@ -6,7 +6,7 @@ module.exports = class StatsView extends View
   template: template
   className: 'stats'
   tagName: 'ul'
-  containerSelector: '#stats-container'
+  container: '#stats-container'
 
   initialize: ->
     super
