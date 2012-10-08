@@ -6,16 +6,13 @@ module.exports = class StatsView extends View
   template: template
   className: 'stats'
   tagName: 'ul'
-  container: '#stats-container'
 
   initialize: ->
     super
     @subscribeEvent 'loginStatus', @loginStatusHandler
     @subscribeEvent 'userData', @render
+    @model = if mediator.user then mediator.user else null
 
   loginStatusHandler: (loggedIn) =>
-    if loggedIn
-      @model = mediator.user
-    else
-      @model = null
+    @model = if loggedIn then mediator.user else null
     @render()

@@ -20,7 +20,7 @@ module.exports = class Twitter extends ServiceProvider
     @loading = false
     # Init the SDK, then resolve
     twttr.anywhere (T) =>
-      mediator.publish 'sdkLoaded'
+      @publishEvent 'sdkLoaded'
       @T = T
       @resolve()
 
@@ -28,22 +28,22 @@ module.exports = class Twitter extends ServiceProvider
     # Return a Boolean
     Boolean window.twttr
 
-  publish: (event, callback) ->
+  trigger: (event, callback) ->
     @T.trigger event, callback
 
-  subscribe: (event, callback) ->
+  on: (event, callback) ->
     @T.bind event, callback
 
-  unsubscribe: (event) ->
+  off: (event) ->
     @T.unbind event
 
   # Trigger login popup
   triggerLogin: (loginContext) ->
     callback = _(@loginHandler).bind(this, loginContext)
     @T.signIn()
-    @subscribe 'authComplete', (event, currentUser, accessToken) ->
+    @on 'authComplete', (event, currentUser, accessToken) ->
       callback {currentUser, accessToken}
-    @subscribe 'signOut', ->
+    @on 'signOut', ->
       console.log 'Signout event'
       callback()
 
@@ -52,24 +52,24 @@ module.exports = class Twitter extends ServiceProvider
   publishSession: (response) ->
     user = response.currentUser
 
-    mediator.publish 'serviceProviderSession',
+    @publishEvent 'serviceProviderSession',
       provider: this
       userId: user.id
       accessToken: response.accessToken or twttr.anywhere.token
-    mediator.publish 'userData', user.attributes
+    @publishEvent 'userData', user.attributes
 
   # Callback for the login popup
   loginHandler: (loginContext, response) =>
     console.debug 'Twitter#loginHandler', loginContext, response
     if response
       # Publish successful login
-      mediator.publish 'loginSuccessful',
+      @publishEvent 'loginSuccessful',
         provider: this, loginContext: loginContext
 
       # Publish the session
       @publishSession response
     else
-      mediator.publish 'loginFail', provider: this, loginContext: loginContext
+      @publishEvent 'loginFail', provider: this, loginContext: loginContext
 
   getLoginStatus: (callback = @loginStatusHandler, force = false) ->
     console.debug 'Twitter#getLoginStatus'
@@ -80,7 +80,7 @@ module.exports = class Twitter extends ServiceProvider
     if response.currentUser
       @publishSession response
     else
-      mediator.publish 'logout'
+      @publishEvent 'logout'
 
   # Handler for the global logout event
   logout: ->

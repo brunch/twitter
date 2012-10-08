@@ -7,18 +7,18 @@ module.exports = class StatusView extends View
   template: template
   id: 'status'
   className: 'status'
-  container: '#status-container'
 
   initialize: ->
     super
     @subscribeEvent 'loginStatus', @loginStatusHandler
     @subscribeEvent 'userData', @render
+    ['keyup', 'keydown'].forEach (eventName) =>
+      @delegate eventName, '.status-text', @updateStatusText
+    @delegate 'click', '.status-create-button', @createStatus
+    @model = if mediator.user then new Status else null
 
   loginStatusHandler: (loggedIn) =>
-    if loggedIn
-      @model = new Status()
-    else
-      @model = null
+    @model = if loggedIn then new Status else null
     @render()
 
   updateCharacterCount: (valid, count) =>
@@ -40,15 +40,9 @@ module.exports = class StatusView extends View
     @updateCharacterCount valid, count
 
   createStatus: (event) =>
-    @model.save {},
+    @model.save null,
       error: (model, error) =>
         console.error 'Tweet error', error
       success: (model, attributes) =>
         console.debug 'Tweet success', attributes
         @$('.status-text').val('').trigger('keydown')
-
-  render: =>
-    super
-    _(['keyup', 'keydown']).each (eventName) =>
-      @delegate eventName, '.status-text', @updateStatusText
-    @delegate 'click', '.status-create-button', @createStatus

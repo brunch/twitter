@@ -1,4 +1,3 @@
-mediator = require 'mediator'
 View = require 'views/base/view'
 template = require 'views/templates/navigation'
 
@@ -13,6 +12,5 @@ module.exports = class NavigationView extends View
 
   initialize: ->
     super
-    #console.debug 'NavigationView#initialize'
     @subscribeEvent 'loginStatus', @render
     @subscribeEvent 'startupController', @render

@@ -9,6 +9,7 @@ module.exports = class TweetsView extends CollectionView
   tagName: 'div' # This is not directly a list but contains a list
   id: 'tweets'
 
+  itemView: TweetView
   container: '#content-container'
   listSelector: '.tweets' # Append the item views to this element
   fallbackSelector: '.fallback'
@@ -17,16 +18,12 @@ module.exports = class TweetsView extends CollectionView
     super # Will render the list itself and all items
     @subscribeEvent 'loginStatus', @showHideLoginNote
 
-  # The most important method a class inheriting from CollectionView
-  # must overwrite.
-  getView: (item) ->
-    # Instantiate an item view
-    new TweetView model: item
-
   # Show/hide a login appeal if not logged in
   showHideLoginNote: ->
-    @$('.tweets, .tweets-header').css 'display', if mediator.user then 'block' else 'none'
+    display = (if mediator.user then 'block' else 'none')
+    @$('.tweets, .tweets-header').css 'display', display
 
   render: ->
     super
+    console.log 'Render'
     @showHideLoginNote()

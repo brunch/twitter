@@ -6,6 +6,5 @@ module.exports = class TweetsController extends Controller
   historyURL: ''
 
   index: (params) ->
-    #console.debug 'PostsController#index'
-    @collection = new Tweets()
-    @view = new TweetsView collection: @collection
+    @collection = new Tweets
+    @view = new TweetsView {@collection}
