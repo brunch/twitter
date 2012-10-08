@@ -74,6 +74,19 @@
   globals.require.brunch = true;
 })();
 
+window.require.define({"test/controllers/login_controller_test": function(exports, require, module) {
+  var Login;
+
+  Login = require('controllers/login');
+
+  describe('Login', function() {
+    return beforeEach(function() {
+      return this.controller = new Login();
+    });
+  });
+  
+}});
+
 window.require.define({"test/models/header_test": function(exports, require, module) {
   var Header;
 
@@ -181,6 +194,7 @@ window.require.define({"test/views/home_page_view_test": function(exports, requi
   
 }});
 
+window.require('test/controllers/login_controller_test');
 window.require('test/models/header_test');
 window.require('test/views/header_view_test');
 window.require('test/views/home_page_view_test');

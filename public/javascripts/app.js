@@ -109,7 +109,9 @@ window.require.define({"application": function(exports, require, module) {
       this.initLayout();
       this.initMediator();
       this.initControllers();
-      this.initRouter(routes);
+      this.initRouter(routes, {
+        pushState: false
+      });
       return typeof Object.freeze === "function" ? Object.freeze(this) : void 0;
     };
 
@@ -157,14 +159,38 @@ window.require.define({"controllers/base/controller": function(exports, require,
   
 }});
 
-window.require.define({"controllers/navigation_controller": function(exports, require, module) {
-  var Controller, Navigation, NavigationController, NavigationView, mediator,
+window.require.define({"controllers/login_controller": function(exports, require, module) {
+  var Controller, LoginsController,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Controller = require('controllers/base/controller');
 
-  mediator = require('mediator');
+  module.exports = LoginsController = (function(_super) {
+
+    __extends(LoginsController, _super);
+
+    function LoginsController() {
+      return LoginsController.__super__.constructor.apply(this, arguments);
+    }
+
+    LoginsController.prototype.logout = function() {
+      this.publishEvent('!logout');
+      return this.publishEvent('!router:route', '/');
+    };
+
+    return LoginsController;
+
+  })(Controller);
+  
+}});
+
+window.require.define({"controllers/navigation_controller": function(exports, require, module) {
+  var Controller, Navigation, NavigationController, NavigationView,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  Controller = require('controllers/base/controller');
 
   Navigation = require('models/navigation');
 
@@ -182,15 +208,10 @@ window.require.define({"controllers/navigation_controller": function(exports, re
 
     NavigationController.prototype.initialize = function() {
       NavigationController.__super__.initialize.apply(this, arguments);
-      this.model = new Navigation();
+      this.model = new Navigation;
       return this.view = new NavigationView({
         model: this.model
       });
-    };
-
-    NavigationController.prototype.logout = function() {
-      mediator.publish('!logout');
-      return Backbone.history.navigate('//');
     };
 
     return NavigationController;
@@ -229,7 +250,7 @@ window.require.define({"controllers/session_controller": function(exports, requi
     }
 
     SessionController.serviceProviders = {
-      twitter: new Twitter()
+      twitter: new Twitter
     };
 
     SessionController.prototype.loginStatusDetermined = false;
@@ -289,10 +310,10 @@ window.require.define({"controllers/session_controller": function(exports, requi
       var serviceProvider;
       serviceProvider = SessionController.serviceProviders[serviceProviderName];
       if (!serviceProvider.isLoaded()) {
-        mediator.publish('serviceProviderMissing', serviceProviderName);
+        this.publishEvent('serviceProviderMissing', serviceProviderName);
         return;
       }
-      mediator.publish('loginAttempt', serviceProviderName);
+      this.publishEvent('loginAttempt', serviceProviderName);
       return serviceProvider.triggerLogin();
     };
 
@@ -307,12 +328,12 @@ window.require.define({"controllers/session_controller": function(exports, requi
 
     SessionController.prototype.publishLogin = function() {
       this.loginStatusDetermined = true;
-      mediator.publish('login', mediator.user);
-      return mediator.publish('loginStatus', true);
+      this.publishEvent('login', mediator.user);
+      return this.publishEvent('loginStatus', true);
     };
 
     SessionController.prototype.triggerLogout = function() {
-      return mediator.publish('logout');
+      return this.publishEvent('logout');
     };
 
     SessionController.prototype.logout = function() {
@@ -320,7 +341,7 @@ window.require.define({"controllers/session_controller": function(exports, requi
       this.disposeUser();
       this.serviceProviderName = null;
       this.showLoginView();
-      return mediator.publish('loginStatus', false);
+      return this.publishEvent('loginStatus', false);
     };
 
     SessionController.prototype.userData = function(data) {
@@ -400,7 +421,7 @@ window.require.define({"controllers/tweets_controller": function(exports, requir
     TweetsController.prototype.historyURL = '';
 
     TweetsController.prototype.index = function(params) {
-      this.collection = new Tweets();
+      this.collection = new Tweets;
       return this.view = new TweetsView({
         collection: this.collection
       });
@@ -434,7 +455,7 @@ window.require.define({"lib/services/service_provider": function(exports, requir
 
   module.exports = ServiceProvider = (function() {
 
-    _(ServiceProvider.prototype).extend(Chaplin.Subscriber);
+    _(ServiceProvider.prototype).extend(Chaplin.EventBroker);
 
     ServiceProvider.prototype.loading = false;
 
@@ -490,24 +511,24 @@ window.require.define({"lib/services/service_provider": function(exports, requir
       eventPayload = {provider: this, loginContext}
       if response
         # Publish successful login
-        mediator.publish 'loginSuccessful', eventPayload
+        @publishEvent 'loginSuccessful', eventPayload
 
         # Publish the session
-        mediator.publish 'serviceProviderSession',
+        @publishEvent 'serviceProviderSession',
           provider: this
           userId: response.userId
           accessToken: response.accessToken
           # etc.
 
       else
-        mediator.publish 'loginFail', eventPayload
+        @publishEvent 'loginFail', eventPayload
 
     getLoginStatus: (callback = @loginStatusHandler, force = false) ->
       ServiceProviderLibrary.getLoginStatus callback, force
 
     loginStatusHandler: (response) =>
       return unless response
-      mediator.publish 'serviceProviderSession',
+      @publishEvent 'serviceProviderSession',
         provider: this
         userId: response.userId
         accessToken: response.accessToken
@@ -560,7 +581,7 @@ window.require.define({"lib/services/twitter": function(exports, require, module
       var _this = this;
       this.loading = false;
       return twttr.anywhere(function(T) {
-        mediator.publish('sdkLoaded');
+        _this.publishEvent('sdkLoaded');
         _this.T = T;
         return _this.resolve();
       });
@@ -570,15 +591,15 @@ window.require.define({"lib/services/twitter": function(exports, require, module
       return Boolean(window.twttr);
     };
 
-    Twitter.prototype.publish = function(event, callback) {
+    Twitter.prototype.trigger = function(event, callback) {
       return this.T.trigger(event, callback);
     };
 
-    Twitter.prototype.subscribe = function(event, callback) {
+    Twitter.prototype.on = function(event, callback) {
       return this.T.bind(event, callback);
     };
 
-    Twitter.prototype.unsubscribe = function(event) {
+    Twitter.prototype.off = function(event) {
       return this.T.unbind(event);
     };
 
@@ -586,13 +607,13 @@ window.require.define({"lib/services/twitter": function(exports, require, module
       var callback;
       callback = _(this.loginHandler).bind(this, loginContext);
       this.T.signIn();
-      this.subscribe('authComplete', function(event, currentUser, accessToken) {
+      this.on('authComplete', function(event, currentUser, accessToken) {
         return callback({
           currentUser: currentUser,
           accessToken: accessToken
         });
       });
-      return this.subscribe('signOut', function() {
+      return this.on('signOut', function() {
         console.log('Signout event');
         return callback();
       });
@@ -601,24 +622,24 @@ window.require.define({"lib/services/twitter": function(exports, require, module
     Twitter.prototype.publishSession = function(response) {
       var user;
       user = response.currentUser;
-      mediator.publish('serviceProviderSession', {
+      this.publishEvent('serviceProviderSession', {
         provider: this,
         userId: user.id,
         accessToken: response.accessToken || twttr.anywhere.token
       });
-      return mediator.publish('userData', user.attributes);
+      return this.publishEvent('userData', user.attributes);
     };
 
     Twitter.prototype.loginHandler = function(loginContext, response) {
       console.debug('Twitter#loginHandler', loginContext, response);
       if (response) {
-        mediator.publish('loginSuccessful', {
+        this.publishEvent('loginSuccessful', {
           provider: this,
           loginContext: loginContext
         });
         return this.publishSession(response);
       } else {
-        return mediator.publish('loginFail', {
+        return this.publishEvent('loginFail', {
           provider: this,
           loginContext: loginContext
         });
@@ -641,7 +662,7 @@ window.require.define({"lib/services/twitter": function(exports, require, module
       if (response.currentUser) {
         return this.publishSession(response);
       } else {
-        return mediator.publish('logout');
+        return this.publishEvent('logout');
       }
     };
 
@@ -1020,7 +1041,7 @@ window.require.define({"models/status": function(exports, require, module) {
       timeout = setTimeout(options.error.bind(options, 'Timeout error'), 4000);
       provider.T.Status.update(model.get('text'), function(tweet) {
         window.clearTimeout(timeout);
-        mediator.publish('tweet:add', tweet.attributes);
+        _this.publishEvent('tweet:add', tweet.attributes);
         return options.success(tweet.attributes);
       });
     };
@@ -1146,7 +1167,7 @@ window.require.define({"models/user": function(exports, require, module) {
 
     User.prototype.initialize = function() {
       User.__super__.initialize.apply(this, arguments);
-      return mediator.on('userMethods', this.initializeMethods);
+      return this.subscribeEvent('userMethods', this.initializeMethods);
     };
 
     User.prototype.initializeMethods = function(methods) {
@@ -1167,9 +1188,9 @@ window.require.define({"models/user": function(exports, require, module) {
 window.require.define({"routes": function(exports, require, module) {
   
   module.exports = function(match) {
+    match('logout', 'login#logout');
     match('', 'tweets#index');
-    match('@:user', 'user#show');
-    return match('logout', 'navigation#logout');
+    return match('@:user', 'user#show');
   };
   
 }});
@@ -1280,60 +1301,6 @@ window.require.define({"views/base/view": function(exports, require, module) {
   
 }});
 
-window.require.define({"views/composite_view": function(exports, require, module) {
-  var CompositeView, View,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-  View = require('views/base/view');
-
-  module.exports = CompositeView = (function(_super) {
-
-    __extends(CompositeView, _super);
-
-    function CompositeView() {
-      this.dispose = __bind(this.dispose, this);
-
-      this.render = __bind(this.render, this);
-      return CompositeView.__super__.constructor.apply(this, arguments);
-    }
-
-    CompositeView.prototype.initialize = function() {
-      CompositeView.__super__.initialize.apply(this, arguments);
-      return this.subViews = [];
-    };
-
-    CompositeView.prototype.attachView = function(view) {
-      return this.subViews.push(view);
-    };
-
-    CompositeView.prototype.renderSubViews = function() {
-      var _this = this;
-      return _(this.subViews).forEach(function(view) {
-        return _this.$(view.container).append(view.render().el);
-      });
-    };
-
-    CompositeView.prototype.render = function() {
-      CompositeView.__super__.render.apply(this, arguments);
-      return this.renderSubViews();
-    };
-
-    CompositeView.prototype.dispose = function() {
-      var _this = this;
-      CompositeView.__super__.dispose.apply(this, arguments);
-      return _(this.subViews).forEach(function(view) {
-        return view.dispose();
-      });
-    };
-
-    return CompositeView;
-
-  })(View);
-  
-}});
-
 window.require.define({"views/layout": function(exports, require, module) {
   var Chaplin, Layout,
     __hasProp = {}.hasOwnProperty,
@@ -1349,10 +1316,6 @@ window.require.define({"views/layout": function(exports, require, module) {
       return Layout.__super__.constructor.apply(this, arguments);
     }
 
-    Layout.prototype.initialize = function() {
-      return Layout.__super__.initialize.apply(this, arguments);
-    };
-
     return Layout;
 
   })(Chaplin.Layout);
@@ -1360,11 +1323,9 @@ window.require.define({"views/layout": function(exports, require, module) {
 }});
 
 window.require.define({"views/login_view": function(exports, require, module) {
-  var LoginView, View, mediator, template, utils,
+  var LoginView, View, template, utils,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-  mediator = require('mediator');
 
   utils = require('lib/utils');
 
@@ -1390,13 +1351,11 @@ window.require.define({"views/login_view": function(exports, require, module) {
 
     LoginView.prototype.initialize = function(options) {
       LoginView.__super__.initialize.apply(this, arguments);
-      console.debug('LoginView#initialize', this.el, this.$el, options, options.serviceProviders);
       return this.initButtons(options.serviceProviders);
     };
 
     LoginView.prototype.initButtons = function(serviceProviders) {
       var buttonSelector, failed, loaded, loginHandler, serviceProvider, serviceProviderName, _results;
-      console.debug('LoginView#initButtons', serviceProviders);
       _results = [];
       for (serviceProviderName in serviceProviders) {
         serviceProvider = serviceProviders[serviceProviderName];
@@ -1412,21 +1371,26 @@ window.require.define({"views/login_view": function(exports, require, module) {
       return _results;
     };
 
-    LoginView.prototype.loginWith = function(serviceProviderName, serviceProvider, e) {
-      console.debug('LoginView#loginWith', serviceProviderName, serviceProvider);
-      e.preventDefault();
+    LoginView.prototype.loginWith = function(serviceProviderName, serviceProvider, event) {
+      event.preventDefault();
       if (!serviceProvider.isLoaded()) {
         return;
       }
-      mediator.publish('login:pickService', serviceProviderName);
-      return mediator.publish('!login', serviceProviderName);
+      this.publishEvent('login:pickService', serviceProviderName);
+      return this.publishEvent('!login', serviceProviderName);
     };
 
     LoginView.prototype.serviceProviderLoaded = function(serviceProviderName) {
+      if (this.disposed) {
+        return;
+      }
       return this.$("." + serviceProviderName).removeClass('service-loading');
     };
 
     LoginView.prototype.serviceProviderFailed = function(serviceProviderName) {
+      if (this.disposed) {
+        return;
+      }
       return this.$("." + serviceProviderName).removeClass('service-loading').addClass('service-unavailable').attr('disabled', true).attr('title', "Error connecting. Please check whether you areblocking " + (utils.upcase(serviceProviderName)) + ".");
     };
 
@@ -1437,11 +1401,9 @@ window.require.define({"views/login_view": function(exports, require, module) {
 }});
 
 window.require.define({"views/navigation_view": function(exports, require, module) {
-  var NavigationView, View, mediator, template,
+  var NavigationView, View, template,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-  mediator = require('mediator');
 
   View = require('views/base/view');
 
@@ -1476,14 +1438,14 @@ window.require.define({"views/navigation_view": function(exports, require, modul
 }});
 
 window.require.define({"views/sidebar_view": function(exports, require, module) {
-  var CompositeView, SidebarView, StatsView, StatusView, mediator, template,
+  var SidebarView, StatsView, StatusView, View, mediator, template,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   mediator = require('mediator');
 
-  CompositeView = require('views/composite_view');
+  View = require('views/base/view');
 
   StatsView = require('views/stats_view');
 
@@ -1510,8 +1472,6 @@ window.require.define({"views/sidebar_view": function(exports, require, module) 
 
     SidebarView.prototype.initialize = function() {
       SidebarView.__super__.initialize.apply(this, arguments);
-      this.attachView(new StatusView());
-      this.attachView(new StatsView());
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
       return this.subscribeEvent('userData', this.render);
     };
@@ -1521,9 +1481,23 @@ window.require.define({"views/sidebar_view": function(exports, require, module) 
       return this.render();
     };
 
+    SidebarView.prototype.render = function() {
+      var _this = this;
+      SidebarView.__super__.render.apply(this, arguments);
+      this.subview('status', new StatusView({
+        container: this.$('#status-container')
+      }));
+      this.subview('stats', new StatsView({
+        container: this.$('#stats-container')
+      }));
+      return ['status', 'stats'].forEach(function(name) {
+        return _this.subview(name).render();
+      });
+    };
+
     return SidebarView;
 
-  })(CompositeView);
+  })(View);
   
 }});
 
@@ -1554,20 +1528,15 @@ window.require.define({"views/stats_view": function(exports, require, module) {
 
     StatsView.prototype.tagName = 'ul';
 
-    StatsView.prototype.container = '#stats-container';
-
     StatsView.prototype.initialize = function() {
       StatsView.__super__.initialize.apply(this, arguments);
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
-      return this.subscribeEvent('userData', this.render);
+      this.subscribeEvent('userData', this.render);
+      return this.model = mediator.user ? mediator.user : null;
     };
 
     StatsView.prototype.loginStatusHandler = function(loggedIn) {
-      if (loggedIn) {
-        this.model = mediator.user;
-      } else {
-        this.model = null;
-      }
+      this.model = loggedIn ? mediator.user : null;
       return this.render();
     };
 
@@ -1596,8 +1565,6 @@ window.require.define({"views/status_view": function(exports, require, module) {
     __extends(StatusView, _super);
 
     function StatusView() {
-      this.render = __bind(this.render, this);
-
       this.createStatus = __bind(this.createStatus, this);
 
       this.updateStatusText = __bind(this.updateStatusText, this);
@@ -1614,20 +1581,20 @@ window.require.define({"views/status_view": function(exports, require, module) {
 
     StatusView.prototype.className = 'status';
 
-    StatusView.prototype.container = '#status-container';
-
     StatusView.prototype.initialize = function() {
+      var _this = this;
       StatusView.__super__.initialize.apply(this, arguments);
       this.subscribeEvent('loginStatus', this.loginStatusHandler);
-      return this.subscribeEvent('userData', this.render);
+      this.subscribeEvent('userData', this.render);
+      ['keyup', 'keydown'].forEach(function(eventName) {
+        return _this.delegate(eventName, '.status-text', _this.updateStatusText);
+      });
+      this.delegate('click', '.status-create-button', this.createStatus);
+      return this.model = mediator.user ? new Status : null;
     };
 
     StatusView.prototype.loginStatusHandler = function(loggedIn) {
-      if (loggedIn) {
-        this.model = new Status();
-      } else {
-        this.model = null;
-      }
+      this.model = loggedIn ? new Status : null;
       return this.render();
     };
 
@@ -1659,7 +1626,7 @@ window.require.define({"views/status_view": function(exports, require, module) {
 
     StatusView.prototype.createStatus = function(event) {
       var _this = this;
-      return this.model.save({}, {
+      return this.model.save(null, {
         error: function(model, error) {
           return console.error('Tweet error', error);
         },
@@ -1668,15 +1635,6 @@ window.require.define({"views/status_view": function(exports, require, module) {
           return _this.$('.status-text').val('').trigger('keydown');
         }
       });
-    };
-
-    StatusView.prototype.render = function() {
-      var _this = this;
-      StatusView.__super__.render.apply(this, arguments);
-      _(['keyup', 'keydown']).each(function(eventName) {
-        return _this.delegate(eventName, '.status-text', _this.updateStatusText);
-      });
-      return this.delegate('click', '.status-create-button', this.createStatus);
     };
 
     return StatusView;
@@ -2043,6 +2001,8 @@ window.require.define({"views/tweets_view": function(exports, require, module) {
 
     TweetsView.prototype.id = 'tweets';
 
+    TweetsView.prototype.itemView = TweetView;
+
     TweetsView.prototype.container = '#content-container';
 
     TweetsView.prototype.listSelector = '.tweets';
@@ -2054,18 +2014,15 @@ window.require.define({"views/tweets_view": function(exports, require, module) {
       return this.subscribeEvent('loginStatus', this.showHideLoginNote);
     };
 
-    TweetsView.prototype.getView = function(item) {
-      return new TweetView({
-        model: item
-      });
-    };
-
     TweetsView.prototype.showHideLoginNote = function() {
-      return this.$('.tweets, .tweets-header').css('display', mediator.user ? 'block' : 'none');
+      var display;
+      display = (mediator.user ? 'block' : 'none');
+      return this.$('.tweets, .tweets-header').css('display', display);
     };
 
     TweetsView.prototype.render = function() {
       TweetsView.__super__.render.apply(this, arguments);
+      console.log('Render');
       return this.showHideLoginNote();
     };
 
