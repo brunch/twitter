@@ -4,6 +4,12 @@ Tweet your brunch is an example app built with [Brunch](http://brunch.io) &
 
 ![](http://brunch.io/images/screenshots/twitter.png)
 
+## Deprecation
+**The application will stop working on December 1, 2012**
+because of new Twitter’s clients policies.
+
+See [sunsetting anywhere](https://dev.twitter.com/blog/sunsetting-anywhere) blog post.
+
 ## Getting started
 Clone the repo and run `npm install` & `brunch build`.
 See more info on the [official site](http://brunch.io).
