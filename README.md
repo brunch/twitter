@@ -17,7 +17,7 @@ See more info on the [official site](http://brunch.io).
 ## License
 The MIT license.
 
-Copyright (c) Paul Miller (http://paulmillr.com/)
+Copyright (c) 2013 Paul Miller (http://paulmillr.com/)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
